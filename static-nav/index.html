@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的聚合导航站</title>
+    <!-- 1. 引入Tailwind CSS CDN（样式布局核心） -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 2. 引入Font Awesome（图标库） -->
+    <link rel="stylesheet" href="node_modules/font-awesome/css/font-awesome.min.css">
+    <!-- 3. 引入jQuery（简化JS操作，新手友好） -->
+    <script src="node_modules/jquery/dist/jquery.min.js"></script>
+    <!-- 4. 网站图标（可选） -->
+    <link rel="icon" href="res/favicon.ico" type="image/x-icon">
+    <!-- 5. Tailwind 自定义配置（可选） -->
+    <script src="js/tailwind-config.js"></script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 dark:text-white min-h-screen">
+    <!-- 头部区域（时间、搜索框、公告） -->
+    <header class="bg-white dark:bg-gray-800 shadow-sm py-4 px-2 md:px-4">
+        <div class="container mx-auto max-w-7xl">
+            <!-- 顶部：时间 -->
+            <div class="flex flex-col md:flex-row justify-between items-center mb-4">
+                <!-- 时间显示容器 -->
+                <div id="current-time-container" class="text-gray-600 dark:text-gray-300 mb-2 md:mb-0 text-center md:text-left">
+                    <div id="holiday-countdown" class="text-sm opacity-80"></div>
+                    <div id="lunar-date" class="text-sm opacity-90"></div>
+                    <div id="current-time"></div>
+                </div>
+            </div>
+            <!-- 搜索框（站内链接搜索 + 网络搜索） -->
+            <div class="w-full max-w-xl mx-auto">
+                <div class="flex items-center">
+                    <div class="relative flex-1">
+                        <input 
+                            type="text" 
+                            id="search-input" 
+                            placeholder="搜索链接名称/描述..." 
+                            class="w-full pr-10 pl-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-l-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                        >
+                        <button id="clear-search-btn" class="absolute right-8 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-300 hover:text-gray-600 dark:hover:text-gray-100 transition-colors hidden">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+                    <select id="search-engine" class="px-3 py-2 border-y border-gray-300 dark:border-y dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                        <option value="baidu">百度搜索</option>
+                        <option value="google">谷歌搜索</option>
+                        <option value="bing">必应搜索</option>
+                        <option value="so">360搜索</option>
+                    </select>
+                    <button id="search-button" class="px-4 py-2 border border-gray-300 dark:border-gray-700 bg-primary text-white rounded-r-lg hover:bg-primary/90 transition-colors">
+                        <i class="fa fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 移动端菜单按钮 -->
+    <div class="md:hidden container mx-auto max-w-7xl px-2 py-2">
+        <button id="mobile-menu-btn" class="flex items-center justify-between w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-white rounded-lg shadow-[inset_0_2px_4px_rgba(0,0,0,0.1),0_3px_6px_rgba(0,0,0,0.1),0_1px_2px_rgba(255,255,255,0.8)] dark:shadow-[inset_0_2px_4px_rgba(255,255,255,0.1),0_3px_6px_rgba(0,0,0,0.3),0_1px_2px_rgba(255,255,255,0.1)] hover:shadow-[inset_0_2px_4px_rgba(0,0,0,0.15),0_5px_10px_rgba(0,0,0,0.2),0_2px_4px_rgba(255,255,255,0.9)] dark:hover:shadow-[inset_0_2px_4px_rgba(255,255,255,0.15),0_5px_10px_rgba(0,0,0,0.4),0_2px_4px_rgba(255,255,255,0.15)] transition-all duration-300">
+            <span class="font-medium">分类导航</span>
+            <i class="fa fa-bars text-primary"></i>
+        </button>
+    </div>
+
+    <!-- 主体区域（左侧导航 + 分类链接） -->
+    <div class="container mx-auto max-w-full px-2 md:px-4">
+        <div class="flex flex-col lg:flex-row gap-6 pt-8">
+            <!-- 左侧分类导航栏（由JS动态渲染） -->
+            <aside class="lg:w-64 w-full transition-all duration-300 ease-in-out lg:sticky top-4 h-fit">
+                <div id="sidebar-nav" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 md:block"></div>
+            </aside>
+            <!-- 右侧分类链接容器 -->
+            <main class="flex-1">
+                <div id="category-container" class="grid grid-cols-1 gap-6"></div>
+            </main>
+        </div>
+    </div>
+
+    <!-- 底部区域（版权信息） -->
+    <footer class="bg-white dark:bg-gray-800 shadow-sm py-4 px-2 md:px-4 mt-auto">
+        <div class="container mx-auto max-w-7xl text-center text-gray-500 dark:text-gray-400 text-sm">
+            <p>Copyright © 2024 我的聚合导航站 | Theme By Tailwind CSS</p>
+        </div>
+    </footer>
+
+    <!-- 固定功能按钮组 -->
+    <div class="fixed bottom-6 right-6 flex flex-col gap-3 z-50">
+        <!-- 夜间/白天模式切换按钮 -->
+        <button id="theme-toggle-btn" class="p-3 bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none">
+            <i class="fa fa-moon-o text-primary"></i>
+        </button>
+        
+        <!-- 一键返回顶部按钮 -->
+        <button id="back-to-top-btn" class="p-3 bg-primary text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 opacity-0 invisible focus:outline-none">
+            <i class="fa fa-arrow-up"></i>
+        </button>
+    </div>
+
+    <!-- 引入主题管理脚本 -->
+    <script src="js/theme/themeManager.js"></script>
+    <!-- 公告悬浮框 -->
+    <div id="announcement-toast" class="fixed top-4 right-4 bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 max-w-xs w-full transform -translate-y-full opacity-0 transition-all duration-300 z-50">
+        <div class="flex justify-between items-start">
+            <div class="flex items-center">
+                <i class="fa fa-bell text-blue-500 mr-3 mt-1"></i>
+                <div>
+                    <h3 id="toast-title" class="font-semibold text-gray-800 dark:text-white mb-1 text-sm">公告</h3>
+                    <p id="toast-content" class="text-sm text-gray-600 dark:text-gray-300">本站为静态聚合导航，仅供个人使用</p>
+                </div>
+            </div>
+            <button id="close-toast" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+    </div>
+    <!-- 引入核心JS脚本（最后引入，确保DOM加载完成） -->
+    <script src="js/main.js"></script>
+    <!-- 主题预览功能 -->
+    <script src="js/theme-preview.js"></script>
+</body>
+</html>

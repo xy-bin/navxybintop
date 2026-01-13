@@ -1,0 +1,170 @@
+[
+  {
+    "category_name": "常用导航",
+    "category_icon": "fa fa-home",
+    "sort": 1,
+    "category_id": 1,
+    "links": [
+      {
+        "link_name": "百度",
+        "link_url": "https://www.baidu.com",
+        "link_icon": "fa fa-search",
+        "link_desc": "全球最大中文搜索引擎",
+        "sort": 1,
+        "link_id": 1
+      },
+      {
+        "link_name": "微信网页版",
+        "link_url": "https://wx.qq.com",
+        "link_icon": "fa fa-wechat",
+        "link_desc": "微信电脑端快速访问，无需安装客户端",
+        "sort": 2,
+        "link_id": 2
+      },
+      {
+        "link_name": "QQ邮箱",
+        "link_url": "https://mail.qq.com",
+        "link_icon": "fa fa-envelope-o",
+        "link_desc": "腾讯旗下免费邮箱，便捷高效",
+        "sort": 3,
+        "link_id": 3
+      },
+      {
+        "link_name": "阿里云盘",
+        "link_url": "https://www.aliyundrive.com",
+        "link_icon": "fa fa-cloud",
+        "link_desc": "大容量免费云盘，高速下载",
+        "sort": 4,
+        "link_id": 4
+      },
+      {
+        "link_name": "新闻热点榜单",
+        "link_url": "https://news.xybin.top",
+        "link_icon": "",
+        "link_desc": "新闻热点榜单",
+        "sort": 1,
+        "link_id": 5
+      }
+    ]
+  },
+  {
+    "category_name": "AI工具",
+    "category_icon": "fa fa-robot",
+    "sort": 2,
+    "category_id": 2,
+    "links": [
+      {
+        "link_name": "文心一言",
+        "link_url": "https://yiyan.baidu.com",
+        "link_icon": "fa fa-comment",
+        "link_desc": "百度旗下大语言模型，支持聊天、写作、代码生成",
+        "sort": 1,
+        "link_id": 1
+      },
+      {
+        "link_name": "通义千问",
+        "link_url": "https://tongyi.aliyun.com",
+        "link_icon": "fa fa-lightbulb-o",
+        "link_desc": "阿里云旗下大语言模型，专注企业级应用",
+        "sort": 2,
+        "link_id": 2
+      },
+      {
+        "link_name": "讯飞星火",
+        "link_url": "https://xinghuo.xfyun.cn",
+        "link_icon": "fa fa-microphone",
+        "link_desc": "科大讯飞旗下大语言模型，语音交互优势明显",
+        "sort": 3,
+        "link_id": 3
+      }
+    ]
+  },
+  {
+    "category_name": "开发学习",
+    "category_icon": "fa fa-code",
+    "sort": 3,
+    "category_id": 3,
+    "links": [
+      {
+        "link_name": "GitHub",
+        "link_url": "https://github.com",
+        "link_icon": "fa fa-github",
+        "link_desc": "全球最大开源代码托管平台",
+        "sort": 1,
+        "link_id": 1
+      },
+      {
+        "link_name": "W3School",
+        "link_url": "https://www.w3school.com.cn",
+        "link_icon": "fa fa-book",
+        "link_desc": "Web开发入门学习平台，教程详细",
+        "sort": 2,
+        "link_id": 2
+      },
+      {
+        "link_name": "CSDN",
+        "link_url": "https://blog.csdn.net",
+        "link_icon": "fa fa-pencil",
+        "link_desc": "中国最大IT技术社区，解决开发难题",
+        "sort": 3,
+        "link_id": 3
+      }
+    ]
+  },
+  {
+    "category_name": "影音娱乐",
+    "category_icon": "fa fa-folder",
+    "sort": 1,
+    "category_id": 4,
+    "links": []
+  },
+  {
+    "category_name": "影音娱乐",
+    "category_icon": "fa fa-folder",
+    "sort": 1,
+    "category_id": 5,
+    "links": []
+  },
+  {
+    "category_name": "????",
+    "category_icon": "fa fa-home",
+    "sort": 1,
+    "category_id": 6,
+    "links": []
+  },
+  {
+    "category_name": "常用导航",
+    "category_icon": "fa fa-home",
+    "sort": 1,
+    "category_id": 7,
+    "links": []
+  },
+  {
+    "category_name": "常用导航",
+    "category_icon": "fa fa-home",
+    "sort": 1,
+    "category_id": 8,
+    "links": []
+  },
+  {
+    "category_name": "常用导航",
+    "category_icon": "fa fa-home",
+    "sort": 1,
+    "category_id": 9,
+    "links": []
+  },
+  {
+    "category_name": "常用导航",
+    "category_icon": "fa fa-home",
+    "sort": 1,
+    "category_id": 10,
+    "links": []
+  },
+  {
+    "category_name": "常用导航",
+    "category_icon": "fa fa-home",
+    "sort": 1,
+    "category_id": 11,
+    "links": []
+  }
+]

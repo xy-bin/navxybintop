@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试公告内容输入</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        textarea {
+            min-height: 200px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>测试公告内容输入</h1>
+    <div class="form-group">
+        <label for="test-title">公告标题</label>
+        <input type="text" id="test-title" placeholder="请输入公告标题">
+    </div>
+    <div class="form-group">
+        <label for="test-content">公告内容</label>
+        <div id="test-content" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[200px]"></div>
+    </div>
+    <button id="test-save">保存</button>
+    <div id="test-result" style="margin-top: 20px;"></div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        // 模拟Quill库不可用的情况
+        console.log('测试页面：Quill库未加载');
+
+        // 页面加载完成后立即检测Quill是否可用
+        $(document).ready(function() {
+            console.log('页面加载完成，检测Quill库是否可用...');
+            
+            // 检查Quill库是否加载
+            if (typeof Quill === 'undefined') {
+                console.log('❌ Quill库未加载');
+                
+                // 预先创建降级方案：将div替换为textarea
+                const contentElement = document.getElementById('test-content');
+                if (contentElement && contentElement.tagName === 'DIV') {
+                    console.log('🔄 切换到备用方案：普通文本区域');
+                    
+                    // 创建文本区域元素
+                    const textarea = document.createElement('textarea');
+                    textarea.id = 'test-content';
+                    textarea.className = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[200px]';
+                    textarea.placeholder = '请输入公告内容...';
+                    
+                    // 保持原有内容
+                    textarea.value = contentElement.innerHTML;
+                    
+                    // 替换元素
+                    contentElement.parentNode.replaceChild(textarea, contentElement);
+                    
+                    console.log('✅ 降级方案已就绪');
+                }
+            }
+        });
+
+        // 模拟保存功能
+        $('#test-save').click(function() {
+            const title = $('#test-title').val().trim();
+            let content = '';
+            
+            // 获取内容
+            const contentElement = $('#test-content');
+            if (contentElement.is('textarea')) {
+                content = contentElement.val().trim();
+                // 将纯文本转换为HTML格式
+                content = content.replace(/\n/g, '<br>');
+            } else {
+                content = contentElement.html().trim();
+            }
+            
+            // 显示结果
+            $('#test-result').html(`
+                <h2>保存结果：</h2>
+                <p><strong>标题：</strong>${title}</p>
+                <p><strong>内容（HTML格式）：</strong><pre>${content}</pre></p>
+            `);
+        });
+    </script>
+</body>
+</html>
