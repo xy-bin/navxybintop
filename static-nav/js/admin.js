@@ -1,6 +1,186 @@
 // 管理后台核心功能
 
 
+// 根据URL或网站名称自动匹配图标
+function autoMatchIcon(url, name) {
+    // 常见网站图标映射
+    const iconMap = {
+        // 搜索引擎
+        'google.com': 'fa fa-google',
+        'baidu.com': 'fa fa-paw',
+        'bing.com': 'fa fa-windows',
+        'sogou.com': 'fa fa-search',
+        'so.com': 'fa fa-search',
+        'yandex.ru': 'fa fa-search',
+        'duckduckgo.com': 'fa fa-search',
+        
+        // 社交媒体
+        'facebook.com': 'fa fa-facebook',
+        'twitter.com': 'fa fa-twitter',
+        'instagram.com': 'fa fa-instagram',
+        'linkedin.com': 'fa fa-linkedin',
+        'pinterest.com': 'fa fa-pinterest',
+        'reddit.com': 'fa fa-reddit',
+        'youtube.com': 'fa fa-youtube',
+        'vimeo.com': 'fa fa-vimeo',
+        'tiktok.com': 'fa fa-music',
+        'snapchat.com': 'fa fa-camera',
+        'weibo.com': 'fa fa-weibo',
+        'wechat.com': 'fa fa-wechat',
+        'qq.com': 'fa fa-qq',
+        
+        // 新闻资讯
+        'news.google.com': 'fa fa-newspaper-o',
+        'cnn.com': 'fa fa-newspaper-o',
+        'bbc.com': 'fa fa-newspaper-o',
+        'reuters.com': 'fa fa-newspaper-o',
+        'nytimes.com': 'fa fa-newspaper-o',
+        'chinadaily.com.cn': 'fa fa-newspaper-o',
+        
+        // 视频网站
+        'bilibili.com': 'fa fa-play',
+        'iqiyi.com': 'fa fa-play',
+        'youku.com': 'fa fa-play',
+        'tudou.com': 'fa fa-play',
+        'douyu.com': 'fa fa-twitch',
+        'huya.com': 'fa fa-twitch',
+        
+        // 购物网站
+        'amazon.com': 'fa fa-shopping-cart',
+        'taobao.com': 'fa fa-shopping-cart',
+        'tmall.com': 'fa fa-shopping-cart',
+        'jd.com': 'fa fa-shopping-cart',
+        'pinduoduo.com': 'fa fa-shopping-cart',
+        'suning.com': 'fa fa-shopping-cart',
+        'gome.com.cn': 'fa fa-shopping-cart',
+        
+        // 工具网站
+        'github.com': 'fa fa-github',
+        'gitlab.com': 'fa fa-gitlab',
+        'bitbucket.org': 'fa fa-bitbucket',
+        'stackoverflow.com': 'fa fa-stack-overflow',
+        'w3schools.com': 'fa fa-book',
+        'mdn.io': 'fa fa-book',
+        'jsfiddle.net': 'fa fa-code',
+        'codepen.io': 'fa fa-code',
+        
+        // 邮箱
+        'gmail.com': 'fa fa-envelope',
+        'yahoo.com': 'fa fa-envelope',
+        'outlook.com': 'fa fa-envelope',
+        'qq.com': 'fa fa-envelope',
+        '163.com': 'fa fa-envelope',
+        
+        // 云存储
+        'dropbox.com': 'fa fa-dropbox',
+        'drive.google.com': 'fa fa-cloud',
+        'onedrive.live.com': 'fa fa-cloud',
+        
+        // 音乐
+        'spotify.com': 'fa fa-music',
+        'music.163.com': 'fa fa-music',
+        'qqmusic.qq.com': 'fa fa-music',
+        'kugou.com': 'fa fa-music',
+        'kuwo.cn': 'fa fa-music',
+        
+        // 工具
+        'baidu.com': 'fa fa-paw',
+        'weather.com': 'fa fa-cloud',
+        'maps.google.com': 'fa fa-map-marker',
+        'translate.google.com': 'fa fa-language',
+        
+        // 游戏
+        'steamcommunity.com': 'fa fa-gamepad',
+        'playstation.com': 'fa fa-gamepad',
+        'xbox.com': 'fa fa-gamepad',
+        'nintendo.com': 'fa fa-gamepad'
+    };
+    
+    // 尝试从URL中提取域名
+    let domain = '';
+    try {
+        const urlObj = new URL(url);
+        domain = urlObj.hostname;
+    } catch (e) {
+        // 如果URL解析失败，尝试从名称中提取关键词
+        domain = name.toLowerCase();
+    }
+    
+    // 检查完整域名
+    if (iconMap[domain]) {
+        return iconMap[domain];
+    }
+    
+    // 检查子域名（如www.google.com -> google.com）
+    const parts = domain.split('.');
+    if (parts.length >= 2) {
+        const mainDomain = parts.slice(-2).join('.');
+        if (iconMap[mainDomain]) {
+            return iconMap[mainDomain];
+        }
+    }
+    
+    // 根据网站名称匹配
+    const lowerName = name.toLowerCase();
+    for (const key in iconMap) {
+        if (lowerName.includes(key.replace('.com', '').replace('.cn', '').replace('.org', '').replace('.net', ''))) {
+            return iconMap[key];
+        }
+    }
+    
+    // 通用图标
+    if (lowerName.includes('搜索') || lowerName.includes('search')) {
+        return 'fa fa-search';
+    } else if (lowerName.includes('邮件') || lowerName.includes('email')) {
+        return 'fa fa-envelope';
+    } else if (lowerName.includes('视频') || lowerName.includes('video')) {
+        return 'fa fa-play';
+    } else if (lowerName.includes('音乐') || lowerName.includes('music')) {
+        return 'fa fa-music';
+    } else if (lowerName.includes('购物') || lowerName.includes('shop') || lowerName.includes('buy')) {
+        return 'fa fa-shopping-cart';
+    } else if (lowerName.includes('新闻') || lowerName.includes('news')) {
+        return 'fa fa-newspaper-o';
+    } else if (lowerName.includes('地图') || lowerName.includes('map')) {
+        return 'fa fa-map-marker';
+    } else if (lowerName.includes('游戏') || lowerName.includes('game')) {
+        return 'fa fa-gamepad';
+    } else if (lowerName.includes('工具') || lowerName.includes('tool')) {
+        return 'fa fa-wrench';
+    } else if (lowerName.includes('学习') || lowerName.includes('study') || lowerName.includes('learn')) {
+        return 'fa fa-book';
+    } else if (lowerName.includes('博客') || lowerName.includes('blog')) {
+        return 'fa fa-rss';
+    } else if (lowerName.includes('图片') || lowerName.includes('image') || lowerName.includes('photo')) {
+        return 'fa fa-picture-o';
+    }
+    
+    // 默认图标
+    return 'fa fa-link';
+}
+
+// 截断URL函数，限制显示长度并添加省略号
+function truncateUrl(url, maxLength = 30) {
+    if (!url || url.length <= maxLength) {
+        return url;
+    }
+    
+    // 保留协议部分
+    const protocolMatch = url.match(/^https?:\/\//);
+    const protocol = protocolMatch ? protocolMatch[0] : '';
+    const rest = url.slice(protocol.length);
+    
+    if (rest.length <= maxLength - protocol.length) {
+        return url;
+    }
+    
+    // 截断剩余部分，确保总长度不超过maxLength
+    const truncatedRest = rest.slice(0, maxLength - protocol.length - 3) + '...';
+    
+    return protocol + truncatedRest;
+}
+
+
 // 初始化管理页面
 function initAdminPage() {
     // 初始化仪表盘
@@ -26,12 +206,21 @@ function initAdminPage() {
     
     // 初始化公告管理
     initAnnouncementManagement();
+    
+    // 初始化网站设置管理
+    initWebsiteSettings();
 }
 
 
 // 页面加载完成后初始化
 $(document).ready(function() {
     initAdminPage();
+    
+    // 初始化一键添加书签功能
+    generateBookmarklet();
+    
+    // 为复制按钮添加点击事件
+    $('#copy-bookmarklet').on('click', copyBookmarklet);
 });
 
 
@@ -44,18 +233,58 @@ function initDashboard() {
         success: function(response) {
             if (response.success) {
                 // 更新仪表盘统计数据
-                $("#total-bookmarks").text(response.data.total_bookmarks);
-                $("#total-categories").text(response.data.total_categories);
-                $("#active-users").text(response.data.active_users);
+                $("#category-count").text(response.data.total_categories);
+                $("#bookmark-count").text(response.data.total_bookmarks);
+                // 注意：目前HTML中没有活跃用户的显示位置
+                // $("#active-users").text(response.data.active_users);
+            } else if (response.message && response.message.includes("请先登录")) {
+                // 如果API返回未登录错误，重定向到登录页面
+                window.location.href = "/login.html";
             }
         },
-        error: function() {
+        error: function(xhr) {
+            try {
+                const response = JSON.parse(xhr.responseText);
+                if (response.message && response.message.includes("请先登录")) {
+                    // 如果API返回未登录错误，重定向到登录页面
+                    window.location.href = "/login.html";
+                    return;
+                }
+            } catch (e) {}
             // 仪表盘数据加载失败时使用默认值
-            $("#total-bookmarks").text("0");
-            $("#total-categories").text("0");
-            $("#active-users").text("0");
+            $("#category-count").text("0");
+            $("#bookmark-count").text("0");
         }
     });
+    
+    // 从API获取真实访问量数据
+    $.ajax({
+        url: "/api/dashboard",
+        method: "GET",
+        success: function(response) {
+            if (response.success) {
+                // 更新访问量统计卡片
+                $("#today-visits").text(response.data.today_visits);
+                $("#total-visits").text(response.data.total_visits);
+            }
+        },
+        error: function(xhr) {
+            try {
+                const response = JSON.parse(xhr.responseText);
+                if (response.message && response.message.includes("请先登录")) {
+                    // 如果API返回未登录错误，重定向到登录页面
+                    window.location.href = "/login.html";
+                    return;
+                }
+            } catch (e) {}
+            // 访问量数据加载失败时使用默认值
+            $("#today-visits").text("0");
+            $("#total-visits").text("0");
+        }
+    });
+    
+    // 渲染图表
+    renderCharts();
 }
 
 
@@ -66,30 +295,46 @@ function loadCategories() {
         method: "GET",
         success: function(response) {
             if (response.success) {
+                // 直接使用服务器返回的link_count字段
+                const categoriesWithCount = response.data;
+                
                 // 填充分类列表表格
                 $("#category-list").empty();
-                response.data.forEach(category => {
-                    const row = "<tr data-id=\"" + category.category_id + "\"><td class=\"py-3 px-4 text-center\"><i class=\"drag-handle fa fa-bars cursor-move text-gray-500\"></i></td><td class=\"py-3 px-4 text-center\">" + category.category_id + "</td><td class=\"py-3 px-4\">" + category.category_name + "</td><td class=\"py-3 px-4 text-center\"><i class=\"" + category.category_icon + " text-xl\"></i></td><td class=\"py-3 px-4 font-mono text-sm\">" + category.category_icon + "</td><td class=\"py-3 px-4 text-right\"><button class=\"edit-category-btn bg-primary text-white px-3 py-1 rounded-lg mr-2\" data-id=\"" + category.category_id + "\">编辑</button><button class=\"delete-category-btn bg-red-500 text-white px-3 py-1 rounded-lg\" data-id=\"" + category.category_id + "\">删除</button></td></tr>";
+                categoriesWithCount.forEach(category => {
+                    const row = "<tr data-id=\"" + category.category_id + "\"><td class=\"py-3 px-4 text-center\"><i class=\"drag-handle fa fa-bars cursor-move text-gray-500\"></i></td><td class=\"py-3 px-4 text-center\">" + category.category_id + "</td><td class=\"py-3 px-4\"><i class=\"" + category.category_icon + " text-xl mr-2\"></i>" + category.category_name + "</td><td class=\"py-3 px-4 font-mono text-sm\">" + category.category_icon + "</td><td class=\"py-3 px-4 text-center font-medium text-blue-600\">" + (category.link_count || 0) + "</td><td class=\"py-3 px-4 text-right\"><button type=\"button\" class=\"edit-category-btn bg-primary text-white px-3 py-1 rounded-lg mr-2\" data-id=\"" + category.category_id + "\">编辑</button><button type=\"button\" class=\"delete-category-btn bg-red-500 text-white px-3 py-1 rounded-lg\" data-id=\"" + category.category_id + "\">删除</button></td></tr>";
                     $("#category-list").append(row);
                 });
-                
-                // 填充分类选择下拉框
-                $("#select-category").empty();
-                // 添加"全部分类"选项
-                $("#select-category").append("<option value=\"\">全部分类</option>");
-                response.data.forEach(category => {
-                    const option = "<option value=\"" + category.category_id + "\">" + category.category_name + "</option>";
-                    $("#select-category").append(option);
-                });
-                
-                bindCategoryActions();
-                bindCategoryFilter();
-                
-                // 分类加载完成后，默认加载所有书签
-                loadBookmarks();
+                    
+                    // 填充分类选择下拉框
+                    $("#select-category").empty();
+                    // 添加"全部分类"选项
+                    $("#select-category").append("<option value=\"\">全部分类</option>");
+                    response.data.forEach(category => {
+                        const option = "<option value=\"" + category.category_id + "\">" + category.category_name + "</option>";
+                        $("#select-category").append(option);
+                        $("#link-category").append(option);
+                    });
+                    
+                    bindCategoryActions();
+                    bindCategoryFilter();
+                    
+                    // 分类加载完成后，默认加载所有书签
+                    loadBookmarks();
+            } else if (response.message && response.message.includes("请先登录")) {
+                // 如果API返回未登录错误，重定向到登录页面
+                window.location.href = "/login.html";
             }
         },
         error: function(xhr) {
+            try {
+                const response = JSON.parse(xhr.responseText);
+                if (response.message && response.message.includes("请先登录")) {
+                    // 如果API返回未登录错误，重定向到登录页面
+                    window.location.href = "/login.html";
+                    return;
+                }
+            } catch (e) {}
+            
             let errorMsg = "加载分类失败";
             try {
                 const response = JSON.parse(xhr.responseText);
@@ -139,7 +384,7 @@ function loadBookmarks(categoryId = null) {
             
             $("#link-list").empty();
             bookmarks.forEach(bookmark => {
-                const row = "<tr data-id=\"" + bookmark.bookmark_id + "\"><td class=\"py-3 px-4 text-center\"><i class=\"drag-handle fa fa-bars cursor-move text-gray-500\"></i></td><td class=\"py-3 px-4\">" + bookmark.bookmark_id + "</td><td class=\"py-3 px-4\">" + bookmark.bookmark_name + "</td><td class=\"py-3 px-4 truncate\"><a href=\"" + bookmark.bookmark_url + "\" target=\"_blank\">" + bookmark.bookmark_url + "</a></td><td class=\"py-3 px-4\"><i class=\"" + bookmark.bookmark_icon + "\"></i></td><td class=\"py-3 px-4 text-right\"><button class=\"edit-link-btn bg-primary text-white px-3 py-1 rounded-lg mr-2\" data-id=\"" + bookmark.bookmark_id + "\">编辑</button><button class=\"delete-link-btn bg-red-500 text-white px-3 py-1 rounded-lg\" data-id=\"" + bookmark.bookmark_id + "\">删除</button></td></tr>";
+                const row = "<tr data-id=\"" + bookmark.bookmark_id + "\" class=\"hover:bg-gray-50 transition-colors duration-150\"><td class=\"py-3 px-4 text-center bg-gray-50 hover:bg-gray-100\"><i class=\"drag-handle fa fa-bars cursor-move text-gray-400 hover:text-gray-600 transition-colors duration-150\"></i></td><td class=\"py-3 px-4 text-gray-500 font-mono text-sm\" width=\"80\">" + bookmark.bookmark_id + "</td><td class=\"py-3 px-4 font-medium\" width=\"200\"><i class=\"" + bookmark.bookmark_icon + " text-xl text-gray-700 mr-2\"></i>" + bookmark.bookmark_name + "</td><td class=\"py-3 px-4 truncate flex-1\"><a href=\"" + bookmark.bookmark_url + "\" target=\"_blank\" title=\"" + bookmark.bookmark_url + "\" class=\"text-blue-600 hover:text-blue-800 transition-colors duration-150\">" + truncateUrl(bookmark.bookmark_url, 30) + "</a></td><td class=\"py-3 px-4 text-right\"><button type=\"button\" class=\"edit-link-btn bg-primary text-white px-3 py-1 rounded-lg mr-2 hover:bg-primary/90 transition-colors duration-150\" data-id=\"" + bookmark.bookmark_id + "\">编辑</button><button type=\"button\" class=\"delete-link-btn bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition-colors duration-150\" data-id=\"" + bookmark.bookmark_id + "\">删除</button></td></tr>";
                 $("#link-list").append(row);
             });
             bindBookmarkActions();
@@ -244,6 +489,10 @@ function initEventListeners() {
     // 初始化拖拽排序
     initSortable();
     
+    // 一键添加书签功能
+    generateBookmarklet();
+    $('#copy-bookmarklet').on('click', copyBookmarklet);
+    
     // 分类表单保存按钮点击
     $("#save-category-btn").on("click", function(e) {
         const id = $("#category-id").val();
@@ -281,14 +530,47 @@ function initEventListeners() {
         });
     });
 
+    // 监听URL输入，自动匹配图标
+    $("#link-url").on("blur", function(e) {
+        const url = $("#link-url").val();
+        const name = $("#link-name").val();
+        
+        // 只有当图标输入框为空时才自动匹配
+        if (url && !$("#link-icon").val()) {
+            const icon = autoMatchIcon(url, name || url);
+            $("#link-icon").val(icon);
+        }
+    });
+    
+    // 监听名称输入，自动匹配图标
+    $("#link-name").on("blur", function(e) {
+        const name = $("#link-name").val();
+        const url = $("#link-url").val();
+        
+        // 只有当图标输入框为空且URL已填写时才自动匹配
+        if (name && url && !$("#link-icon").val()) {
+            const icon = autoMatchIcon(url, name);
+            $("#link-icon").val(icon);
+        }
+    });
+    
     // 书签表单保存按钮点击
     $("#save-link-btn").on("click", function(e) {
         const id = $("#link-id").val();
+        const bookmarkUrl = $("#link-url").val();
+        const name = $("#link-name").val();
+        
+        // 在保存之前检查是否需要自动匹配图标
+        if (bookmarkUrl && !$("#link-icon").val()) {
+            const icon = autoMatchIcon(bookmarkUrl, name || bookmarkUrl);
+            $("#link-icon").val(icon);
+        }
+        
         const data = {
             bookmark_name: $("#link-name").val(),
             bookmark_url: $("#link-url").val(),
             bookmark_icon: $("#link-icon").val(),
-            category_id: $("#select-category").val(),
+            category_id: $("#link-category").val(),
             bookmark_description: $("#link-desc").val(),
             sort: $("#link-sort").val()
         };
@@ -370,11 +652,6 @@ function initEventListeners() {
         });
     });
     
-    // 移除所有现有的删除事件监听器，使用更彻底的方式
-    $(document).off("click");
-    
-    // 重新绑定所有需要的事件监听器，但确保删除事件监听器是唯一的
-    
     // 分类表单保存按钮点击
     $("#save-category-btn").on("click", function(e) {
         const id = $("#category-id").val();
@@ -415,11 +692,20 @@ function initEventListeners() {
     // 书签表单保存按钮点击
     $("#save-link-btn").on("click", function(e) {
         const id = $("#link-id").val();
+        const bookmarkUrl = $("#link-url").val();
+        const name = $("#link-name").val();
+        
+        // 在保存之前检查是否需要自动匹配图标
+        if (bookmarkUrl && !$("#link-icon").val()) {
+            const icon = autoMatchIcon(bookmarkUrl, name || bookmarkUrl);
+            $("#link-icon").val(icon);
+        }
+        
         const data = {
             bookmark_name: $("#link-name").val(),
             bookmark_url: $("#link-url").val(),
             bookmark_icon: $("#link-icon").val(),
-            category_id: $("#select-category").val(),
+            category_id: $("#link-category").val(),
             bookmark_description: $("#link-desc").val(),
             sort: $("#link-sort").val()
         };
@@ -593,7 +879,7 @@ function initEventListeners() {
                     $("#link-url").val(bookmark.bookmark_url);
                     $("#link-icon").val(bookmark.bookmark_icon);
                     $("#link-desc").val(bookmark.bookmark_description);
-                    $("#select-category").val(bookmark.category_id);
+                    $("#link-category").val(bookmark.category_id);
                     $("#link-sort").val(bookmark.sort);
                     $("#link-form").removeClass("hidden");
                 }
@@ -668,7 +954,8 @@ function initEventListeners() {
     });
 
     // 只保留这一个统一的删除事件监听器
-    $(document).on("click", ".delete-category-btn, .delete-link-btn, .delete-image-source-btn, .delete-announcement-btn", function(e) {
+    $(document).on("click", ".delete-category-btn, .delete-link-btn, .delete-image-source-btn, .delete-announcement-btn, .delete-search-engine-btn", function(e) {
+        console.log("删除按钮被点击！");
         // 必须先阻止所有默认行为和事件冒泡
         e.preventDefault();
         e.stopPropagation();
@@ -676,6 +963,8 @@ function initEventListeners() {
         // 获取按钮信息
         const $this = $(this);
         const id = $this.data('id');
+        console.log("删除按钮ID:", id);
+        console.log("删除按钮类名:", $this.attr('class'));
         
         // 确定删除类型和确认消息
         let confirmMessage = "确定要删除此项目吗？此操作不可恢复！";
@@ -698,12 +987,19 @@ function initEventListeners() {
             confirmMessage = "确定要删除此公告吗？此操作不可恢复！";
             apiUrl = `/api/announcements/${id}`;
             reloadFunction = loadAnnouncements;
+        } else if ($this.hasClass('delete-search-engine-btn')) {
+            confirmMessage = "确定要删除此搜索引擎吗？此操作不可恢复！";
+            apiUrl = `/api/search-engines/${id}`;
+            reloadFunction = loadSearchEngines;
         }
         
         // 使用setTimeout确保确认框在事件循环的下一个周期执行
         setTimeout(function() {
+            console.log("setTimeout回调被执行，准备显示确认框");
+            console.log("确认消息:", confirmMessage);
             // 显示确认对话框
             if (confirm(confirmMessage)) {
+                console.log("用户确认删除，准备执行AJAX请求");
                 // 用户确认后才执行AJAX请求
                 $.ajax({
                     url: apiUrl,
@@ -725,6 +1021,53 @@ function initEventListeners() {
                 });
             }
         }, 0);
+    });
+    
+    // 搜索引擎管理事件监听器
+    
+    // 添加搜索引擎按钮点击
+    $("#add-search-engine-btn").on("click", function() {
+        openAddSearchEngineForm();
+    });
+    
+    // 编辑搜索引擎按钮点击
+    $(document).on("click", ".edit-search-engine-btn", function(e) {
+        e.stopPropagation();
+        const id = $(this).data("id");
+        openEditSearchEngineForm(id);
+    });
+    
+    // 保存搜索引擎按钮点击
+    $("#save-search-engine-btn").on("click", function() {
+        saveSearchEngine();
+    });
+    
+    // 取消按钮点击
+    $("#cancel-search-engine-btn").on("click", function() {
+        // 隐藏表单
+        $("#search-engine-form").addClass("hidden");
+        
+        // 重置表单内容（可选）
+        $("#search-engine-name").val("");
+        $("#search-engine-key").val("");
+        $("#search-engine-url").val("");
+        $("#search-engine-sort").val(0);
+        $("#search-engine-id").val("");
+        editingSearchEngineId = null;
+    });
+    
+    // 搜索搜索引擎按钮点击
+    $("#search-engine-search").on("input", function() {
+        const searchTerm = $(this).val().toLowerCase();
+        $("#search-engine-list tr").each(function() {
+            const engineName = $(this).find("td:nth-child(2)").text().toLowerCase();
+            const engineKey = $(this).find("td:nth-child(3)").text().toLowerCase();
+            if (engineName.includes(searchTerm) || engineKey.includes(searchTerm)) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
     });
     
     // 清空所有数据按钮 - 重新实现，确保先确认后执行
@@ -833,97 +1176,64 @@ function initEventListeners() {
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = htmlContent;
         
-        // 1. 首先提取所有分类（H3标签）
-        console.log('=== 提取分类 ===');
-        const allH3s = tempDiv.querySelectorAll('h3, H3');
-        console.log('找到H3标签数量:', allH3s.length);
+        // 查找所有包含H3的DT元素（分类）
+        const allCategoryDts = tempDiv.querySelectorAll('dt, DT');
         
-        allH3s.forEach(h3 => {
-            // 忽略浏览器书签栏
-            if (h3.getAttribute('PERSONAL_TOOLBAR_FOLDER') === 'true') {
-                console.log('忽略浏览器书签栏:', h3.textContent.trim());
-                return;
-            }
+        console.log('\n=== 遍历所有DT元素 ===');
+        console.log('找到DT元素数量:', allCategoryDts.length);
+        
+        allCategoryDts.forEach(categoryDt => {
+            const categoryH3 = categoryDt.querySelector('h3, H3');
             
-            const categoryName = h3.textContent.trim();
-            if (categoryName && !result.categories.includes(categoryName)) {
-                result.categories.push(categoryName);
-                console.log('添加分类:', categoryName);
+            if (categoryH3) {
+                // 这是一个分类DT
+                console.log('\n找到分类DT:', categoryH3.textContent.trim());
+                
+                // 忽略浏览器书签栏，但仍然处理其下的内容
+                if (categoryH3.getAttribute('PERSONAL_TOOLBAR_FOLDER') === 'true') {
+                    console.log('忽略浏览器书签栏作为分类，但处理其下的内容');
+                    
+                    // 处理书签栏下的DL内容，这里不指定分类，让processDlContent函数自行处理其中的文件夹
+                    const bookmarkBarDl = categoryDt.nextElementSibling;
+                    if (bookmarkBarDl && (bookmarkBarDl.tagName === 'DL' || bookmarkBarDl.tagName === 'dl')) {
+                        console.log('处理书签栏下的DL内容，包含其中的文件夹和书签');
+                        processDlContent(bookmarkBarDl);
+                    }
+                    return;
+                }
+                
+                // 获取分类名称
+                const categoryName = categoryH3.textContent.trim();
+                console.log('分类名称:', categoryName);
+                
+                // 添加到分类列表
+                if (categoryName && !result.categories.includes(categoryName)) {
+                    result.categories.push(categoryName);
+                    console.log('添加分类到列表:', categoryName);
+                }
+                
+                // 查找该分类下的DL元素，其中包含该分类的书签
+                const categoryDl = categoryDt.nextElementSibling;
+                if (categoryDl && (categoryDl.tagName === 'DL' || categoryDl.tagName === 'dl')) {
+                    console.log('处理分类下的DL内容');
+                    // 处理该DL元素中的所有书签
+                    processDlContent(categoryDl, categoryName);
+                }
             }
         });
         
-        console.log('提取到的分类:', result.categories);
-        
-        // 2. 然后提取所有书签
-        console.log('\n=== 提取书签 ===');
-        const allBookmarkAs = tempDiv.querySelectorAll('a, A');
-        console.log('找到A标签数量:', allBookmarkAs.length);
-        
-        allBookmarkAs.forEach((bookmarkA, index) => {
-            // 获取书签URL
-            const url = bookmarkA.getAttribute('href');
-            console.log(`处理A标签 ${index + 1}:`, bookmarkA.textContent.trim(), 'URL:', url);
-            
-            // 跳过无效URL
-            if (!url) {
-                console.log('跳过无效URL');
+        // 处理顶级DL中的书签（不在任何分类中）
+        const topLevelDls = tempDiv.querySelectorAll('dl, DL');
+        topLevelDls.forEach(dl => {
+            // 检查是否已经处理过（即是否是某个分类DT的下一个兄弟元素）
+            const prevSibling = dl.previousElementSibling;
+            if (prevSibling && (prevSibling.tagName === 'DT' || prevSibling.tagName === 'dt') && prevSibling.querySelector('h3, H3')) {
+                console.log('跳过已处理的DL:', dl);
                 return;
             }
             
-            // 跳过非HTTP/HTTPS URL
-            if (!(url.startsWith('http://') || url.startsWith('https://'))) {
-                console.log('跳过非HTTP/HTTPS URL');
-                return;
-            }
-            
-            // 排除特定书签
-            if (url === 'http://znl.tupojingyang.top/Web/mine.html') {
-                console.log('排除特定书签');
-                return;
-            }
-            
-            // 3. 查找书签所属的分类
-            let categoryName = '未分类';
-            
-            // 查找包含该书签的DT元素
-            let current = bookmarkA;
-            while (current && current.tagName !== 'HTML') {
-                // 查找当前元素或其父元素是否在一个DL中
-                const dl = current.closest('dl, DL');
-                if (dl) {
-                    // 查找这个DL之前的兄弟DT元素，里面包含分类名称
-                    let prevSibling = dl.previousElementSibling;
-                    while (prevSibling) {
-                        if (prevSibling.tagName === 'DT' || prevSibling.tagName === 'dt') {
-                            const folderH3 = prevSibling.querySelector('h3, H3');
-                            if (folderH3) {
-                                // 检查是否是浏览器书签栏
-                                if (folderH3.getAttribute('PERSONAL_TOOLBAR_FOLDER') !== 'true') {
-                                    categoryName = folderH3.textContent.trim();
-                                    console.log('找到分类:', categoryName);
-                                    break;
-                                }
-                            }
-                        }
-                        prevSibling = prevSibling.previousElementSibling;
-                    }
-                    break;
-                }
-                current = current.parentElement;
-            }
-            
-            // 4. 创建书签对象
-            const bookmark = {
-                bookmark_name: bookmarkA.textContent.trim() || `未命名书签${index + 1}`,
-                bookmark_url: url,
-                bookmark_icon: 'fa fa-link',
-                category_name: categoryName,
-                bookmark_description: bookmarkA.getAttribute('title') || '',
-                sort: result.bookmarks.length
-            };
-            
-            result.bookmarks.push(bookmark);
-            console.log('添加书签:', bookmark.bookmark_name, '分类:', bookmark.category_name);
+            console.log('处理顶级DL:', dl);
+            processDlContent(dl, '未分类');
         });
         
         // 5. 清理分类列表，移除重复项
@@ -934,6 +1244,80 @@ function initEventListeners() {
         console.log('最终书签数量:', result.bookmarks.length);
         
         return result;
+        
+        // 处理DL元素中的内容，包括书签和子分类
+        function processDlContent(dlElement, currentCategory = '未分类') {
+            console.log(`处理DL内容，当前分类:${currentCategory}`);
+            
+            // 查找DL元素中的所有子DT
+            const dlChildren = dlElement.children;
+            for (let i = 0; i < dlChildren.length; i++) {
+                const child = dlChildren[i];
+                console.log('处理DL子元素:', child.tagName);
+                
+                if (child.tagName === 'DT' || child.tagName === 'dt') {
+                    // 检查是否是子分类
+                    const childH3 = child.querySelector('h3, H3');
+                    if (childH3) {
+                        // 这是一个子分类
+                        const subCategoryName = childH3.textContent.trim();
+                        console.log('找到子分类:', subCategoryName);
+                        
+                        // 添加到分类列表
+                        if (subCategoryName && !result.categories.includes(subCategoryName)) {
+                            result.categories.push(subCategoryName);
+                            console.log('添加子分类到列表:', subCategoryName);
+                        }
+                        
+                        // 查找子分类下的DL
+                        const subCategoryDl = child.nextElementSibling;
+                        if (subCategoryDl && (subCategoryDl.tagName === 'DL' || subCategoryDl.tagName === 'dl')) {
+                            console.log('处理子分类下的DL，使用分类:', subCategoryName);
+                            // 递归处理子分类，使用子分类名称作为分类
+                            processDlContent(subCategoryDl, subCategoryName);
+                        }
+                    } else {
+                        // 这是一个书签
+                        const bookmarkA = child.querySelector('a, A');
+                        if (bookmarkA) {
+                            const url = bookmarkA.getAttribute('href');
+                            console.log('处理书签A标签:', bookmarkA.textContent.trim(), 'URL:', url);
+                            
+                            // 跳过无效URL
+                            if (!url) {
+                                console.log('跳过无效URL');
+                                continue;
+                            }
+                            
+                            // 跳过非HTTP/HTTPS URL
+                            if (!(url.startsWith('http://') || url.startsWith('https://'))) {
+                                console.log('跳过非HTTP/HTTPS URL');
+                                continue;
+                            }
+                            
+                            // 排除特定书签
+                            if (url === 'http://znl.tupojingyang.top/Web/mine.html') {
+                                console.log('排除特定书签');
+                                continue;
+                            }
+                            
+                            // 创建书签对象
+                            const bookmark = {
+                                bookmark_name: bookmarkA.textContent.trim() || `未命名书签${result.bookmarks.length + 1}`,
+                                bookmark_url: url,
+                                bookmark_icon: 'fa fa-link',
+                                category_name: currentCategory,
+                                bookmark_description: bookmarkA.getAttribute('title') || '',
+                                sort: result.bookmarks.length
+                            };
+                            
+                            result.bookmarks.push(bookmark);
+                            console.log('添加书签:', bookmark.bookmark_name, '分类:', currentCategory);
+                        }
+                    }
+                }
+            }
+        }
     }
     
     // 导入书签文件选择
@@ -1049,6 +1433,37 @@ function initEventListeners() {
                 console.log('现有分类映射:', categoryIdMap);
                 console.log('解析到的分类:', parsedData.categories);
                 
+                // 遍历所有书签，确保它们的分类都在 categoryIdMap 中
+                console.log('\n=== 检查书签分类 ===');
+                parsedData.bookmarks.forEach((bookmark, index) => {
+                    console.log(`书签 ${index + 1} 分类:`, bookmark.category_name);
+                    if (bookmark.category_name && !categoryIdMap[bookmark.category_name]) {
+                        console.log(`书签 ${index + 1} 的分类 ${bookmark.category_name} 不在 categoryIdMap 中`);
+                        // 如果分类不在 map 中，创建它
+                        $.ajax({
+                            url: '/api/categories',
+                            method: 'POST',
+                            data: JSON.stringify({
+                                category_name: bookmark.category_name,
+                                category_icon: 'fa fa-folder',
+                                sort: Object.keys(categoryIdMap).length + 1
+                            }),
+                            contentType: 'application/json',
+                            async: false, // 同步创建分类
+                            success: function(response) {
+                                if (response.success) {
+                                    categoryIdMap[bookmark.category_name] = response.data.category_id;
+                                    createdCategories++;
+                                    console.log('创建分类成功:', bookmark.category_name, response.data.category_id);
+                                }
+                            },
+                            error: function(xhr, status, error) {
+                                console.error('创建分类失败:', bookmark.category_name, xhr.responseText || error);
+                            }
+                        });
+                    }
+                });
+                
                 // 如果没有未分类，创建一个
                 if (!categoryIdMap['未分类']) {
                     $.ajax({
@@ -1097,67 +1512,74 @@ function initEventListeners() {
                 // 遍历书签数据，逐个导入
                 uniqueBookmarks.forEach((bookmark, index) => {
                     // 调试：输出书签信息
-                    console.log('处理书签:', bookmark.bookmark_name, '预期分类:', bookmark.category_name);
+                    console.log('\n=== 处理书签 ===');
+                    console.log('书签名称:', bookmark.bookmark_name);
+                    console.log('书签URL:', bookmark.bookmark_url);
+                    console.log('预期分类:', bookmark.category_name);
                     console.log('分类映射:', categoryIdMap);
                     
-                    // 获取分类ID，使用更严格的检查
-                    let categoryId = null;
+                    // 获取分类ID
+                    let categoryId = categoryIdMap['未分类']; // 默认使用未分类
                     
-                    // 首先，检查书签是否有category_id
-                    if (bookmark.category_id) {
-                        categoryId = bookmark.category_id;
-                        console.log('使用书签自带的category_id:', categoryId);
-                    } 
-                    // 其次，检查书签是否有category_name，并且该分类存在于映射中
-                    else if (bookmark.category_name && categoryIdMap[bookmark.category_name]) {
-                        categoryId = categoryIdMap[bookmark.category_name];
-                        console.log('通过category_name找到分类ID:', bookmark.category_name, '->', categoryId);
-                    } 
-                    // 再次，尝试将category_name转换为字符串并查找
-                    else if (bookmark.category_name) {
-                        const categoryNameStr = String(bookmark.category_name).trim();
-                        if (categoryIdMap[categoryNameStr]) {
-                            categoryId = categoryIdMap[categoryNameStr];
-                            console.log('通过转换后的category_name找到分类ID:', categoryNameStr, '->', categoryId);
+                    // 检查书签是否有category_name
+                    if (bookmark.category_name) {
+                        // 直接查找分类映射
+                        if (categoryIdMap[bookmark.category_name]) {
+                            categoryId = categoryIdMap[bookmark.category_name];
+                            console.log('通过category_name找到分类ID:', bookmark.category_name, '->', categoryId);
                         } else {
-                            // 如果分类不存在，创建它
-                            console.log('分类不存在，需要创建:', categoryNameStr);
-                            $.ajax({
-                                url: '/api/categories',
-                                method: 'POST',
-                                data: JSON.stringify({
-                                    category_name: categoryNameStr,
-                                    category_icon: 'fa fa-folder',
-                                    sort: Object.keys(categoryIdMap).length + 1
-                                }),
-                                contentType: 'application/json',
-                                async: false, // 同步创建分类
-                                success: function(response) {
-                                    if (response.success) {
-                                        categoryIdMap[categoryNameStr] = response.data.category_id;
-                                        categoryId = response.data.category_id;
-                                        createdCategories++;
-                                        console.log('创建分类成功:', categoryNameStr, response.data.category_id);
+                            // 尝试去除首尾空格后查找
+                            const trimmedCategoryName = bookmark.category_name.trim();
+                            if (categoryIdMap[trimmedCategoryName]) {
+                                categoryId = categoryIdMap[trimmedCategoryName];
+                                console.log('通过去除空格后的category_name找到分类ID:', trimmedCategoryName, '->', categoryId);
+                            } else {
+                                // 尝试创建分类
+                                console.log('分类不存在，创建:', bookmark.category_name);
+                                $.ajax({
+                                    url: '/api/categories',
+                                    method: 'POST',
+                                    data: JSON.stringify({
+                                        category_name: bookmark.category_name,
+                                        category_icon: 'fa fa-folder',
+                                        sort: Object.keys(categoryIdMap).length + 1
+                                    }),
+                                    contentType: 'application/json',
+                                    async: false, // 同步创建分类
+                                    success: function(response) {
+                                        if (response.success) {
+                                            categoryIdMap[bookmark.category_name] = response.data.category_id;
+                                            categoryId = response.data.category_id;
+                                            createdCategories++;
+                                            console.log('创建分类成功:', bookmark.category_name, response.data.category_id);
+                                        }
+                                    },
+                                    error: function(xhr, status, error) {
+                                        console.error('创建分类失败:', bookmark.category_name, xhr.responseText || error);
                                     }
-                                },
-                                error: function(xhr, status, error) {
-                                    console.error('创建分类失败:', categoryNameStr, xhr.responseText || error);
-                                }
-                            });
+                                });
+                            }
                         }
+                    } else {
+                        console.log('书签没有category_name，使用默认分类');
                     }
                     
-                    // 最后，如果还是没有分类ID，使用未分类
-                    if (!categoryId) {
-                        categoryId = categoryIdMap['未分类'];
-                        console.log('使用默认分类:', categoryId);
-                    }
+                    console.log('最终分类ID:', categoryId);
                     
                     // 为书签添加默认分类（如果没有指定）
+                    const bookmarkName = bookmark.bookmark_name || `未命名书签${index + 1}`;
+                    const bookmarkUrl = bookmark.bookmark_url;
+                    
+                    // 自动匹配图标
+                    let bookmarkIcon = bookmark.bookmark_icon;
+                    if (!bookmarkIcon) {
+                        bookmarkIcon = autoMatchIcon(bookmarkUrl, bookmarkName);
+                    }
+                    
                     const bookmarkData = {
-                        bookmark_name: bookmark.bookmark_name || `未命名书签${index + 1}`,
-                        bookmark_url: bookmark.bookmark_url,
-                        bookmark_icon: bookmark.bookmark_icon || 'fa fa-link',
+                        bookmark_name: bookmarkName,
+                        bookmark_url: bookmarkUrl,
+                        bookmark_icon: bookmarkIcon,
                         category_id: categoryId,
                         bookmark_description: bookmark.bookmark_description || '',
                         sort: bookmark.sort || index
@@ -1340,7 +1762,7 @@ function initEventListeners() {
     });
     
     // 添加公告按钮
-    $("#add-announcement-btn").on("click", function() {
+    $("#add-announcement-btn").off("click").on("click", function() {
         $("#announcement-form-title").text("添加公告");
         $("#announcement-title").val("");
         $("#announcement-content").html("");
@@ -1350,7 +1772,7 @@ function initEventListeners() {
     });
     
     // 保存公告
-    $("#save-announcement-btn").on("click", function() {
+    $("#save-announcement-btn").off("click").on("click", function() {
         const id = $("#announcement-id").val();
         const data = {
             title: $("#announcement-title").val(),
@@ -1384,7 +1806,7 @@ function initEventListeners() {
     });
     
     // 取消公告操作
-    $("#cancel-announcement-btn").on("click", function() {
+    $("#cancel-announcement-btn").off("click").on("click", function() {
         $("#announcement-form").addClass("hidden");
     });
     
@@ -1525,12 +1947,17 @@ function bindNavigationEvents() {
         $(this).addClass("bg-primary text-white");
         
         // 隐藏所有内容区域
-        $("#dashboard, #category-management, #link-management, #theme-settings, #image-sources, #announcement-management").addClass("hidden");
+        $("#dashboard, #category-management, #link-management, #theme-settings, #image-sources, #announcement-management, #search-engine-management").addClass("hidden");
         
         // 显示对应的内容区域
         const target = $(this).attr("href").substring(1);
         if (target) {
             $("#" + target).removeClass("hidden");
+            
+            // 根据目标区域初始化对应的功能
+            if (target === "search-engine-management") {
+                initSearchEngineManagement();
+            }
         }
     });
 }
@@ -1604,7 +2031,7 @@ function loadImageSources() {
             $("#image-source-list").empty();
             if (response.success && response.data) {
                 response.data.forEach(source => {
-                    const row = `<tr><td class="py-3 px-4">${source.id}</td><td class="py-3 px-4">${source.name}</td><td class="py-3 px-4 truncate">${source.url}</td><td class="py-3 px-4">${source.desc}</td><td class="py-3 px-4 text-right"><button class="edit-image-source-btn bg-primary text-white px-3 py-1 rounded-lg mr-2" data-id="${source.id}">编辑</button><button class="delete-image-source-btn bg-red-500 text-white px-3 py-1 rounded-lg" data-id="${source.id}">删除</button></td></tr>`;
+                    const row = `<tr><td class="py-3 px-4">${source.id}</td><td class="py-3 px-4">${source.name}</td><td class="py-3 px-4 truncate"><a href="${source.url}" target="_blank" title="${source.url}">${truncateUrl(source.url, 50)}</a></td><td class="py-3 px-4">${source.desc}</td><td class="py-3 px-4 text-right"><button type="button" class="edit-image-source-btn bg-primary text-white px-3 py-1 rounded-lg mr-2" data-id="${source.id}">编辑</button><button type="button" class="delete-image-source-btn bg-red-500 text-white px-3 py-1 rounded-lg" data-id="${source.id}">删除</button></td></tr>`;
                     $("#image-source-list").append(row);
                 });
             } else {
@@ -1654,7 +2081,7 @@ function loadAnnouncements() {
             response.forEach(announcement => {
                 const status = announcement.is_active ? "启用" : "禁用";
                 const statusClass = announcement.is_active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800";
-                const row = `<tr><td class="py-3 px-4">${announcement.id}</td><td class="py-3 px-4">${announcement.title}</td><td class="py-3 px-4"><span class="px-2 py-1 text-xs rounded-full ${statusClass}">${status}</span></td><td class="py-3 px-4">${announcement.created_at}</td><td class="py-3 px-4">${announcement.updated_at}</td><td class="py-3 px-4 text-right"><button class="edit-announcement-btn bg-primary text-white px-3 py-1 rounded-lg mr-2" data-id="${announcement.id}">编辑</button><button class="delete-announcement-btn bg-red-500 text-white px-3 py-1 rounded-lg" data-id="${announcement.id}">删除</button></td></tr>`;
+                const row = `<tr><td class="py-3 px-4">${announcement.id}</td><td class="py-3 px-4">${announcement.title}</td><td class="py-3 px-4"><span class="px-2 py-1 text-xs rounded-full ${statusClass}">${status}</span></td><td class="py-3 px-4">${announcement.created_at}</td><td class="py-3 px-4">${announcement.updated_at}</td><td class="py-3 px-4 text-right"><button type="button" class="edit-announcement-btn bg-primary text-white px-3 py-1 rounded-lg mr-2" data-id="${announcement.id}">编辑</button><button type="button" class="delete-announcement-btn bg-red-500 text-white px-3 py-1 rounded-lg" data-id="${announcement.id}">删除</button></td></tr>`;
                 $("#announcement-list").append(row);
             });
             bindAnnouncementActions();
@@ -1673,4 +2100,297 @@ function loadAnnouncements() {
 // 绑定公告操作事件
 function bindAnnouncementActions() {
     // 移除事件委托绑定，移到initEventListeners()中
+}
+
+
+// ------------------------
+// 搜索引擎管理功能
+// ------------------------
+
+// 初始化搜索引擎管理
+function initSearchEngineManagement() {
+    loadSearchEngines();
+}
+
+// 加载搜索引擎列表
+function loadSearchEngines() {
+    $.ajax({
+        url: "/api/search-engines",
+        method: "GET",
+        success: function(response) {
+            $("#search-engine-list").empty();
+            if (response.success && response.data) {
+                response.data.forEach(engine => {
+                    const row = `<tr><td class="py-3 px-4">${engine.search_engine_id}</td><td class="py-3 px-4">${engine.engine_name}</td><td class="py-3 px-4">${engine.engine_key}</td><td class="py-3 px-4 truncate"><a href="${engine.engine_url}" target="_blank" title="${engine.engine_url}">${truncateUrl(engine.engine_url, 50)}</a></td><td class="py-3 px-4">${engine.sort}</td><td class="py-3 px-4 text-right"><button type="button" class="edit-search-engine-btn bg-primary text-white px-3 py-1 rounded-lg mr-2" data-id="${engine.search_engine_id}">编辑</button><button type="button" class="delete-search-engine-btn bg-red-500 text-white px-3 py-1 rounded-lg" data-id="${engine.search_engine_id}">删除</button></td></tr>`;
+                    $("#search-engine-list").append(row);
+                });
+            } else {
+                // 如果没有数据，显示空状态
+                const emptyRow = `<tr><td colspan="6" class="py-4 text-center text-gray-500">暂无搜索引擎数据</td></tr>`;
+                $("#search-engine-list").append(emptyRow);
+            }
+        },
+        error: function(xhr) {
+            let errorMsg = "加载搜索引擎失败";
+            try {
+                const response = JSON.parse(xhr.responseText);
+                errorMsg = response.message || errorMsg;
+            } catch (e) {}
+            alert(errorMsg);
+            
+            // 显示错误状态
+            const errorRow = `<tr><td colspan="6" class="py-4 text-center text-red-500">加载搜索引擎失败：${errorMsg}</td></tr>`;
+            $("#search-engine-list").empty().append(errorRow);
+        }
+    });
+}
+
+// 添加/编辑搜索引擎表单
+let editingSearchEngineId = null;
+
+// 打开添加搜索引擎表单
+function openAddSearchEngineForm() {
+    editingSearchEngineId = null;
+    $("#search-engine-form-title").text("添加搜索引擎");
+    $("#search-engine-name").val("");
+    $("#search-engine-key").val("");
+    $("#search-engine-url").val("");
+    $("#search-engine-sort").val(0);
+    $("#search-engine-form").removeClass("hidden");
+}
+
+// 打开编辑搜索引擎表单
+function openEditSearchEngineForm(id) {
+    $.ajax({
+        url: "/api/search-engines/" + id,
+        method: "GET",
+        success: function(response) {
+            if (response.success) {
+                const engine = response.data;
+                editingSearchEngineId = id;
+                $("#search-engine-form-title").text("编辑搜索引擎");
+                $("#search-engine-name").val(engine.engine_name);
+                $("#search-engine-key").val(engine.engine_key);
+                $("#search-engine-url").val(engine.engine_url);
+                $("#search-engine-sort").val(engine.sort);
+                $("#search-engine-form").removeClass("hidden");
+            }
+        },
+        error: function(xhr) {
+            let errorMsg = "获取搜索引擎详情失败";
+            try {
+                const response = JSON.parse(xhr.responseText);
+                errorMsg = response.message || errorMsg;
+            } catch (e) {}
+            alert(errorMsg);
+        }
+    });
+}
+
+// 保存搜索引擎
+function saveSearchEngine() {
+    const engineName = $("#search-engine-name").val().trim();
+    const engineKey = $("#search-engine-key").val().trim();
+    const engineUrl = $("#search-engine-url").val().trim();
+    const sort = parseInt($("#search-engine-sort").val()) || 0;
+    
+    // 验证表单
+    if (!engineName || !engineKey || !engineUrl) {
+        alert("请填写完整的搜索引擎信息");
+        return;
+    }
+    
+    const engineData = {
+        engine_name: engineName,
+        engine_key: engineKey,
+        engine_url: engineUrl,
+        sort: sort
+    };
+    
+    const url = editingSearchEngineId ? "/api/search-engines/" + editingSearchEngineId : "/api/search-engines";
+    const method = editingSearchEngineId ? "PUT" : "POST";
+    
+    $.ajax({
+        url: url,
+        method: method,
+        contentType: "application/json",
+        data: JSON.stringify(engineData),
+        success: function(response) {
+            if (response.success) {
+                alert(editingSearchEngineId ? "搜索引擎更新成功" : "搜索引擎添加成功");
+                $("#search-engine-form").addClass("hidden");
+                loadSearchEngines();
+            } else {
+                alert(response.message || "操作失败");
+            }
+        },
+        error: function(xhr) {
+            let errorMsg = editingSearchEngineId ? "更新搜索引擎失败" : "添加搜索引擎失败";
+            try {
+                const response = JSON.parse(xhr.responseText);
+                errorMsg = response.message || errorMsg;
+            } catch (e) {}
+            alert(errorMsg);
+        }
+    });
+}
+
+// 删除搜索引擎
+function deleteSearchEngine(id) {
+    if (confirm("确定要删除这个搜索引擎吗？")) {
+        $.ajax({
+            url: "/api/search-engines/" + id,
+            method: "DELETE",
+            success: function(response) {
+                if (response.success) {
+                    alert("搜索引擎删除成功");
+                    loadSearchEngines();
+                } else {
+                    alert(response.message || "删除失败");
+                }
+            },
+            error: function(xhr) {
+                let errorMsg = "删除搜索引擎失败";
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    errorMsg = response.message || errorMsg;
+                } catch (e) {}
+                alert(errorMsg);
+            }
+        });
+    }
+}
+
+// ------------------------------
+// 一键添加书签功能
+// ------------------------------
+
+function generateBookmarklet() {
+    // 获取当前网站URL（使用window.location.origin）
+    const baseUrl = window.location.origin;
+    const token = '291b848e68a5949f3e57b5490015b02f';
+    
+    // 生成简洁可靠的bookmarklet代码（使用iframe模态框）
+    const bookmarklet = `javascript:(function(){var overlay=document.createElement("div");overlay.style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;";var modal=document.createElement("div");modal.style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:550px;height:450px;background:white;border-radius:12px;box-shadow:0 15px 50px rgba(0,0,0,0.3);z-index:10000;overflow:hidden;";var closeBtn=document.createElement("button");closeBtn.style="position:absolute;top:10px;right:10px;width:35px;height:35px;background:#ff4444;color:white;border:none;border-radius:50%;cursor:pointer;font-size:20px;z-index:10002;";closeBtn.innerHTML="×";closeBtn.onclick=function(){document.body.removeChild(modal);document.body.removeChild(overlay);window.removeEventListener('message',handleCloseMessage);};var iframe=document.createElement("iframe");iframe.style="width:100%;height:100%;border:none;overflow:hidden;";iframe.src="${baseUrl}/api/v1/jsadd?token=${token}&name="+encodeURIComponent(document.title)+"&url="+encodeURIComponent(location.href);iframe.scrolling="no";modal.appendChild(closeBtn);modal.appendChild(iframe);document.body.appendChild(overlay);document.body.appendChild(modal);overlay.onclick=function(){document.body.removeChild(modal);document.body.removeChild(overlay);window.removeEventListener('message',handleCloseMessage);};function handleCloseMessage(event){if(event.data==='close-modal'){document.body.removeChild(modal);document.body.removeChild(overlay);window.removeEventListener('message',handleCloseMessage);}}window.addEventListener('message',handleCloseMessage);setTimeout(function(){if(document.body.contains(modal)){document.body.removeChild(modal);document.body.removeChild(overlay);window.removeEventListener('message',handleCloseMessage);}},5000);})();void(0)`;
+    
+    // 填充到输入框
+    $('#bookmarklet-link').val(bookmarklet);
+}
+
+// 复制bookmarklet到剪贴板
+function copyBookmarklet() {
+    const bookmarkletInput = document.getElementById('bookmarklet-link');
+    
+    // 选择文本
+    bookmarkletInput.select();
+    bookmarkletInput.setSelectionRange(0, 99999); // 移动到文本末尾
+    
+    try {
+        // 复制到剪贴板
+        document.execCommand('copy');
+        
+        // 显示复制成功提示
+        const copyButton = document.getElementById('copy-bookmarklet');
+        const originalText = copyButton.textContent;
+        copyButton.textContent = '已复制!';
+        copyButton.classList.add('bg-green-600');
+        copyButton.classList.remove('bg-blue-600');
+        
+        // 2秒后恢复原状
+        setTimeout(() => {
+            copyButton.textContent = originalText;
+            copyButton.classList.remove('bg-green-600');
+            copyButton.classList.add('bg-blue-600');
+        }, 2000);
+        
+    } catch (err) {
+        console.error('复制失败:', err);
+        alert('复制失败，请手动复制');
+    }
+}
+
+// ------------------------------
+// 网站设置管理
+// ------------------------------
+
+// 加载网站设置
+function loadWebsiteSettings() {
+    $.ajax({
+        url: "/api/website-settings",
+        method: "GET",
+        success: function(response) {
+            if (response.success) {
+                const settings = response.data;
+                
+                // 设置表单字段值
+                $("#website-title").val(settings.site_title || "");
+                $("#website-logo").val(settings.site_logo || "");
+                $("#website-keywords").val(settings.site_keywords || "");
+                $("#website-description").val(settings.site_description || "");
+                $("#website-copyright").val(settings.site_copyright || "");
+                $("#website-icp").val(settings.site_icp || "");
+                $("#website-footer").val(settings.site_footer || "");
+                $("#website-footer-custom").val(settings.site_footer_custom || "");
+            } else {
+                console.error("加载网站设置失败:", response.message);
+            }
+        },
+        error: function(xhr) {
+            console.error("加载网站设置失败:", xhr.statusText);
+        }
+    });
+}
+
+// 保存网站设置
+function saveWebsiteSettings() {
+    const settings = {
+        site_title: $("#website-title").val(),
+        site_logo: $("#website-logo").val(),
+        site_keywords: $("#website-keywords").val(),
+        site_description: $("#website-description").val(),
+        site_copyright: $("#website-copyright").val(),
+        site_icp: $("#website-icp").val(),
+        site_footer: $("#website-footer").val(),
+        site_footer_custom: $("#website-footer-custom").val()
+    };
+    
+    $.ajax({
+        url: "/api/website-settings",
+        method: "POST",
+        data: JSON.stringify(settings),
+        contentType: "application/json",
+        xhrFields: {
+            withCredentials: true // 确保发送Cookie和认证信息
+        },
+        success: function(response) {
+            if (response.success) {
+                alert("网站设置保存成功");
+                // 保存成功后重新加载设置，确保UI显示最新值
+                loadWebsiteSettings();
+            } else {
+                alert(response.message || "保存失败");
+            }
+        },
+        error: function(xhr) {
+            console.error("保存网站设置失败:", xhr.statusText, xhr.responseText);
+            try {
+                const errorData = JSON.parse(xhr.responseText);
+                alert("保存网站设置失败: " + (errorData.message || xhr.statusText));
+            } catch (e) {
+                alert("保存网站设置失败: " + xhr.statusText);
+            }
+        }
+    });
+}
+
+// 初始化网站设置管理
+function initWebsiteSettings() {
+    // 加载网站设置
+    loadWebsiteSettings();
+    
+    // 添加保存按钮点击事件
+    $("#save-website-settings-btn").on("click", function(e) {
+        e.preventDefault();
+        saveWebsiteSettings();
+    });
 }

@@ -108,6 +108,18 @@
                                 <span>公告管理</span>
                             </a>
                         </li>
+                        <li>
+                            <a href="#search-engine-management" class="flex items-center p-3 rounded-lg hover:bg-secondary transition-colors">
+                                <i class="fa fa-search mr-3"></i>
+                                <span>搜索引擎管理</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#website-settings" class="flex items-center p-3 rounded-lg hover:bg-secondary transition-colors">
+                                <i class="fa fa-cog mr-3"></i>
+                                <span>网站设置</span>
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </aside>
@@ -251,15 +263,15 @@
                     <!-- 分类列表 -->
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 bg-white rounded-lg shadow-sm">
-                            <thead class="bg-gray-50">
+                            <thead class="bg-gray-100">
                                 <tr>
-                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider sm:px-6">ID</th>
-                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider sm:px-6">排序</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sm:px-6">分类名称</th>
-                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider sm:px-6">图标</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sm:px-6">图标代码</th>
-                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider sm:px-6">操作</th>
-                            </tr>
+                                    <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700 uppercase tracking-wider sm:px-6 border-b">排序</th>
+                                    <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700 uppercase tracking-wider sm:px-6 border-b">ID</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider sm:px-6 border-b">分类名称</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider sm:px-6 border-b">图标代码</th>
+                                    <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700 uppercase tracking-wider sm:px-6 border-b">链接数量</th>
+                                    <th class="px-4 py-3 text-right text-sm font-semibold text-gray-700 uppercase tracking-wider sm:px-6 border-b">操作</th>
+                                </tr>
                             </thead>
                             <tbody id="category-list" class="divide-y divide-gray-200">
                                 <!-- 分类列表将通过JS动态生成 -->
@@ -275,20 +287,20 @@
                     <!-- 功能按钮和分类选择区域 -->
                     <div class="bg-gray-50 p-4 rounded-lg mb-6">
                         <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
-                            <div class="flex gap-3">
-                                <button id="export-bookmarks-btn" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors">
+                            <div class="flex flex-wrap gap-3">
+                                <button id="export-bookmarks-btn" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors shadow-sm hover:shadow">
                                     <i class="fa fa-download mr-1"></i> 导出书签
                                 </button>
                                 <div class="relative">
                                     <input type="file" id="import-bookmarks-file" accept=".html,.json" class="absolute inset-0 opacity-0 cursor-pointer">
-                                    <button id="import-bookmarks-btn" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                                    <button id="import-bookmarks-btn" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors shadow-sm hover:shadow">
                                         <i class="fa fa-upload mr-1"></i> 导入书签
                                     </button>
                                 </div>
-                                <button id="add-link-btn" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
+                                <button id="add-link-btn" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors shadow-sm hover:shadow font-medium">
                                     <i class="fa fa-plus mr-1"></i> 添加书签
                                 </button>
-                                <button id="clear-all-data-btn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">
+                                <button id="clear-all-data-btn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors shadow-sm hover:shadow">
                                     <i class="fa fa-trash mr-1"></i> 清空所有数据
                                 </button>
                             </div>
@@ -325,6 +337,12 @@
                                 <input type="text" id="link-desc" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50">
                             </div>
                             <div>
+                                <label for="link-category" class="block text-sm font-medium text-gray-700 mb-1">分类</label>
+                                <select id="link-category" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50">
+                                    <!-- 分类选项将通过JS动态生成 -->
+                                </select>
+                            </div>
+                            <div>
                                 <label for="link-sort" class="block text-sm font-medium text-gray-700 mb-1">排序值</label>
                                 <input type="number" id="link-sort" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50">
                             </div>
@@ -340,13 +358,12 @@
                         <table class="min-w-full divide-y divide-gray-200 bg-white rounded-lg shadow-sm">
                             <thead class="bg-gray-50">
                                 <tr>
-                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider sm:px-6">排序</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sm:px-6">ID</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sm:px-6">书签名称</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sm:px-6">URL</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sm:px-6">图标</th>
-                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider sm:px-6">操作</th>
-                            </tr>
+                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider sm:px-6">排序</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sm:px-6">ID</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sm:px-6">书签名称</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sm:px-6">URL</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider sm:px-6">操作</th>
+                                </tr>
                             </thead>
                             <tbody id="link-list" class="divide-y divide-gray-200">
                                 <!-- 书签列表将通过JS动态生成 -->
@@ -548,6 +565,112 @@
                         </table>
                     </div>
                 </div>
+                
+                <!-- 搜索引擎管理区域 -->
+                <div id="search-engine-management" class="bg-white rounded-xl shadow-sm p-6 mb-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-lg font-bold text-gray-800">搜索引擎管理</h2>
+                        <button id="add-search-engine-btn" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
+                            <i class="fa fa-plus mr-1"></i> 添加搜索引擎
+                        </button>
+                    </div>
+                    
+                    <!-- 搜索输入框 -->
+                    <div class="mb-4">
+                        <input type="text" id="search-engine-search" placeholder="搜索搜索引擎名称..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                    </div>
+                    
+                    <!-- 搜索引擎列表 -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">名称</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">标识</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">搜索URL</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">排序</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="search-engine-list" class="bg-white divide-y divide-gray-200">
+                                <!-- 搜索引擎列表将通过JS动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- 网站设置区域 -->
+                <div id="website-settings" class="bg-white rounded-xl shadow-sm p-6 mb-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-lg font-bold text-gray-800">网站设置</h2>
+                        <button id="save-website-settings-btn" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
+                            <i class="fa fa-save mr-1"></i> 保存设置
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- 基本信息 -->
+                        <!-- 一键添加书签功能说明 -->
+        <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+            <h3 class="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">一键添加书签功能</h3>
+            <p class="text-blue-700 dark:text-blue-300 mb-3">将下面的链接添加到浏览器书签栏，即可在任意网站一键添加书签：</p>
+            <div class="flex items-center gap-2">
+                <input type="text" id="bookmarklet-link" class="flex-1 px-4 py-2 border border-blue-300 dark:border-blue-700 rounded-lg bg-white dark:bg-gray-800 text-blue-900 dark:text-blue-100" readonly>
+                <button id="copy-bookmarklet" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200">复制</button>
+            </div>
+            <p class="text-xs text-blue-600 dark:text-blue-400 mt-2">使用说明：打开任意网站，点击书签栏中的"一键添加书签"按钮即可将当前网站添加到导航站</p>
+        </div>
+
+        <div class="space-y-4">
+            <div>
+                <label for="website-title" class="block text-sm font-medium text-gray-700 mb-1">网站标题</label>
+                <input type="text" id="website-title" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="请输入网站标题">
+            </div>
+                            
+                            <div>
+                                <label for="website-logo" class="block text-sm font-medium text-gray-700 mb-1">网站LOGO</label>
+                                <input type="text" id="website-logo" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="请输入LOGO图片URL">
+                            </div>
+                            
+                            <div>
+                                <label for="website-keywords" class="block text-sm font-medium text-gray-700 mb-1">站点关键词</label>
+                                <input type="text" id="website-keywords" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="请输入站点关键词，用逗号分隔">
+                            </div>
+                            
+                            <div>
+                                <label for="website-description" class="block text-sm font-medium text-gray-700 mb-1">站点描述</label>
+                                <textarea id="website-description" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" rows="3" placeholder="请输入站点描述"></textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- 其他信息 -->
+                        <div class="space-y-4">
+                            <div>
+                                <label for="website-copyright" class="block text-sm font-medium text-gray-700 mb-1">版权信息</label>
+                                <input type="text" id="website-copyright" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="请输入版权信息">
+                            </div>
+                            
+                            <div>
+                                <label for="website-icp" class="block text-sm font-medium text-gray-700 mb-1">备案信息</label>
+                                <input type="text" id="website-icp" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="请输入备案信息">
+                            </div>
+                            
+                            <div>
+                                <label for="website-footer" class="block text-sm font-medium text-gray-700 mb-1">自定义footer</label>
+                                <textarea id="website-footer" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" rows="2" placeholder="请输入自定义footer内容"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 站点底部自定义 -->
+                    <div class="mt-6 space-y-4">
+                        <div>
+                            <label for="website-footer-custom" class="block text-sm font-medium text-gray-700 mb-1">站点底部自定义HTML</label>
+                            <textarea id="website-footer-custom" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" rows="6" placeholder="可填写网站统计、JS代码(需要script标签)、CSS代码(需要style标签)等支持HTML代码"></textarea>
+                        </div>
+                    </div>
+                </div>
             </section>
         </div>
     </main>
@@ -585,5 +708,35 @@
     <script src="js/dashboard.js"></script>
     <!-- 引入管理后台JS -->
     <script src="js/admin.js"></script>
+    
+    <!-- 搜索引擎表单 -->
+    <div id="search-engine-form" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
+            <h2 id="search-engine-form-title" class="text-lg font-bold text-gray-800 mb-4">添加/编辑搜索引擎</h2>
+            <form>
+                <input type="hidden" id="search-engine-id">
+                <div class="mb-4">
+                    <label for="search-engine-name" class="block text-sm font-medium text-gray-700 mb-1">搜索引擎名称</label>
+                    <input type="text" id="search-engine-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="请输入搜索引擎名称">
+                </div>
+                <div class="mb-4">
+                    <label for="search-engine-key" class="block text-sm font-medium text-gray-700 mb-1">搜索引擎标识</label>
+                    <input type="text" id="search-engine-key" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="请输入搜索引擎标识（唯一）">
+                </div>
+                <div class="mb-4">
+                    <label for="search-engine-url" class="block text-sm font-medium text-gray-700 mb-1">搜索URL</label>
+                    <input type="text" id="search-engine-url" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="请输入搜索引擎URL（例如：https://www.baidu.com/s?wd=）">
+                </div>
+                <div class="mb-4">
+                    <label for="search-engine-sort" class="block text-sm font-medium text-gray-700 mb-1">排序</label>
+                    <input type="number" id="search-engine-sort" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="请输入排序值" value="0">
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" id="cancel-search-engine-btn" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">取消</button>
+                    <button type="button" id="save-search-engine-btn" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </body>
 </html>
