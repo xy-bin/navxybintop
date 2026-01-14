@@ -1,5 +1,63 @@
 // 等待DOM加载完成后执行（确保所有容器已存在）
 $(document).ready(function() {
+    // ************ 功能-1：应用网站设置 ************
+    function applyWebsiteSettings() {
+        $.ajax({
+            url: '/api/website-settings',
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    const settings = response.data;
+                    
+                    // 更新网站标题
+                    if (settings.site_title) {
+                        $('#site-title').text(settings.site_title);
+                    }
+                    
+                    // 更新网站关键词
+                    if (settings.site_keywords) {
+                        $('#site-keywords').attr('content', settings.site_keywords);
+                    }
+                    
+                    // 更新网站描述
+                    if (settings.site_description) {
+                        $('#site-description').attr('content', settings.site_description);
+                    }
+                    
+                    // 更新网站图标
+                    if (settings.site_logo) {
+                        $('#site-favicon').attr('href', settings.site_logo);
+                    }
+                    
+                    // 更新网站版权信息
+                    if (settings.site_copyright) {
+                        $('#site-footer').text(settings.site_copyright);
+                    } else {
+                        // 如果没有设置版权信息，使用默认内容
+                        $('#site-footer').text('Copyright © 2024 我的聚合导航站 | Theme By Tailwind CSS');
+                    }
+                    
+                    // 更新备案信息（添加可点击链接）
+                    if (settings.site_icp) {
+                        $('#site-icp').html('<a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">' + settings.site_icp + '</a>');
+                        $('#site-icp').show();
+                    } else {
+                        $('#site-icp').hide();
+                    }
+                    
+                    // 更新网站底部自定义内容
+                    if (settings.site_footer_custom) {
+                        $('#site-footer-custom').html(settings.site_footer_custom);
+                    }
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('加载网站设置失败:', error);
+            }
+        });
+    }
+    
     // ************ 功能0：加载并显示公告悬浮框 ************
     function loadAnnouncement() {
         // 去掉每天只显示一次的限制，每次页面加载都显示公告
@@ -535,13 +593,60 @@ $(document).ready(function() {
 
     // ************ 功能3：站内链接搜索（模糊匹配） + 网络搜索 ************
     function initSearchFunction() {
-        // 搜索引擎映射
-        const searchEngines = {
-            'baidu': 'https://www.baidu.com/s?wd=',
-            'google': 'https://www.google.com/search?q=',
-            'bing': 'https://www.bing.com/search?q=',
-            'so': 'https://www.so.com/s?q='
-        };
+        // 搜索引擎映射（将从API动态加载）
+        let searchEngines = {};
+        
+        // 从API加载搜索引擎数据
+        function loadSearchEngines() {
+            $.getJSON("/api/search-engines", function(data) {
+                // 清空搜索引擎选择器
+                $("#search-engine").empty();
+                
+                // 清空搜索引擎映射
+                searchEngines = {};
+                
+                // 添加默认搜索引擎（如果API返回空数据）
+                const defaultEngines = [
+                    { engine_name: '百度搜索', engine_key: 'baidu', engine_url: 'https://www.baidu.com/s?wd=', sort: 1 },
+                    { engine_name: '谷歌搜索', engine_key: 'google', engine_url: 'https://www.google.com/search?q=', sort: 2 },
+                    { engine_name: '必应搜索', engine_key: 'bing', engine_url: 'https://www.bing.com/search?q=', sort: 3 },
+                    { engine_name: '360搜索', engine_key: 'so', engine_url: 'https://www.so.com/s?q=', sort: 4 }
+                ];
+                
+                const enginesToUse = data.success && data.data.length > 0 ? data.data : defaultEngines;
+                
+                // 填充搜索引擎选择器并更新映射
+                enginesToUse.forEach(engine => {
+                    $("#search-engine").append(`<option value="${engine.engine_key}">${engine.engine_name}</option>`);
+                    searchEngines[engine.engine_key] = engine.engine_url;
+                });
+            }).fail(function(error) {
+                console.error("获取搜索引擎数据失败：", error);
+                
+                // 清空搜索引擎选择器
+                $("#search-engine").empty();
+                
+                // 清空搜索引擎映射
+                searchEngines = {};
+                
+                // 加载失败时使用默认搜索引擎
+                const defaultEngines = [
+                    { engine_name: '百度搜索', engine_key: 'baidu', engine_url: 'https://www.baidu.com/s?wd=' },
+                    { engine_name: '谷歌搜索', engine_key: 'google', engine_url: 'https://www.google.com/search?q=' },
+                    { engine_name: '必应搜索', engine_key: 'bing', engine_url: 'https://www.bing.com/search?q=' },
+                    { engine_name: '360搜索', engine_key: 'so', engine_url: 'https://www.so.com/s?q=' }
+                ];
+                
+                // 填充搜索引擎选择器并更新映射
+                defaultEngines.forEach(engine => {
+                    $("#search-engine").append(`<option value="${engine.engine_key}">${engine.engine_name}</option>`);
+                    searchEngines[engine.engine_key] = engine.engine_url;
+                });
+            });
+        }
+        
+        // 初始化加载搜索引擎数据
+        loadSearchEngines();
         
         // 监听搜索框输入事件（站内搜索）
         $("#search-input").on("input", function() {
@@ -752,6 +857,8 @@ $(document).ready(function() {
 
     // ************ 初始化所有功能 ************
     function initAllFunctions() {
+        // 0. 应用网站设置
+        applyWebsiteSettings();
         // 1. 渲染导航数据（核心功能，优先执行）
         renderNavData();
         // 2. 加载并显示公告悬浮框

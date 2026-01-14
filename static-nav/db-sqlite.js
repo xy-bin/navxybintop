@@ -19,21 +19,107 @@ async function initDatabase() {
         } else {
             // 创建新数据库
             db = new SQL.Database();
-            
-            // 创建表结构
-            createTables(db);
-            
+        }
+        
+        // 始终创建表结构（确保新表被添加）
+        createTables(db);
+        
+        // 检查是否需要迁移搜索引擎数据
+        await checkAndMigrateSearchEngines(db);
+        
+        // 如果是新数据库，迁移其他数据
+        if (!fs.existsSync(DB_FILE)) {
             // 迁移数据
             await migrateData(db);
-            
-            // 保存数据库到文件
-            saveDatabase(db);
         }
+        
+        // 检查website_settings表是否有数据
+        const websiteSettingsCheck = db.exec('SELECT COUNT(*) as count FROM website_settings');
+        const websiteSettingsCount = websiteSettingsCheck && websiteSettingsCheck[0] && websiteSettingsCheck[0].values ? websiteSettingsCheck[0].values[0][0] : 0;
+        
+        // 如果website_settings表没有数据，初始化默认数据
+        if (websiteSettingsCount === 0) {
+            // 初始化网站设置数据
+            const websiteSettingsData = [
+                { key: 'site_title', value: '导航站', description: '网站标题' },
+                { key: 'site_logo', value: '', description: '网站LOGO URL' },
+                { key: 'site_keywords', value: '导航站,实用工具,网址导航', description: '站点关键词' },
+                { key: 'site_description', value: '一个简洁实用的网址导航站', description: '站点描述' },
+                { key: 'site_copyright', value: '© 2024 导航站. All rights reserved.', description: '版权信息' },
+                { key: 'site_icp', value: '', description: '备案信息' },
+                { key: 'site_footer', value: '', description: '自定义footer' },
+                { key: 'site_footer_custom', value: '', description: '站点底部自定义HTML代码' }
+            ];
+            
+            const websiteSettingStmt = db.prepare(`
+                INSERT INTO website_settings (setting_key, setting_value, description, created_at, updated_at) 
+                VALUES ($key, $value, $description, $created_at, $updated_at)
+            `);
+            
+            const now = new Date().toISOString();
+            
+            websiteSettingsData.forEach(setting => {
+                websiteSettingStmt.run({
+                    $key: setting.key,
+                    $value: setting.value,
+                    $description: setting.description,
+                    $created_at: now,
+                    $updated_at: now
+                });
+            });
+            
+            websiteSettingStmt.free();
+            console.log('网站设置数据初始化完成');
+        }
+        
+        // 保存数据库更改（如果有）
+        saveDatabase(db);
         
         return db;
     } catch (err) {
         console.error('初始化数据库失败:', err);
         return null;
+    }
+}
+
+// 检查并迁移搜索引擎数据
+async function checkAndMigrateSearchEngines(db) {
+    try {
+        // 检查搜索引擎表是否存在且为空
+        const results = db.exec('SELECT * FROM search_engines');
+        let engines = [];
+        
+        if (results && results[0] && results[0].values) {
+            const columns = results[0].columns;
+            engines = results[0].values.map(row => {
+                const item = {};
+                columns.forEach((column, index) => {
+                    item[column] = row[index];
+                });
+                return item;
+            });
+        }
+        
+        if (engines.length === 0) {
+            // 插入默认搜索引擎数据
+            const searchEnginesData = [
+                { engine_name: '百度搜索', engine_key: 'baidu', engine_url: 'https://www.baidu.com/s?wd=', sort: 1 },
+                { engine_name: '谷歌搜索', engine_key: 'google', engine_url: 'https://www.google.com/search?q=', sort: 2 },
+                { engine_name: '必应搜索', engine_key: 'bing', engine_url: 'https://www.bing.com/search?q=', sort: 3 },
+                { engine_name: '360搜索', engine_key: 'so', engine_url: 'https://www.so.com/s?q=', sort: 4 }
+            ];
+            
+            // 直接执行SQL插入语句
+            searchEnginesData.forEach(engine => {
+                db.run(
+                    'INSERT INTO search_engines (engine_name, engine_key, engine_url, sort) VALUES (?, ?, ?, ?)',
+                    [engine.engine_name, engine.engine_key, engine.engine_url, engine.sort]
+                );
+            });
+            console.log('默认搜索引擎数据已添加');
+        }
+    } catch (error) {
+        console.error('检查并迁移搜索引擎数据失败:', error);
     }
 }
 
@@ -73,6 +159,38 @@ function createTables(db) {
             link_desc TEXT,
             sort INTEGER,
             FOREIGN KEY (category_id) REFERENCES categories(category_id)
+        )
+    `);
+    
+    // 创建访问量表
+    db.run(`
+        CREATE TABLE IF NOT EXISTS visits (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            visit_date TEXT,
+            visit_count INTEGER DEFAULT 1
+        )
+    `);
+    
+    // 创建搜索引擎表
+    db.run(`
+        CREATE TABLE IF NOT EXISTS search_engines (
+            search_engine_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            engine_name TEXT NOT NULL,
+            engine_key TEXT NOT NULL UNIQUE,
+            engine_url TEXT NOT NULL,
+            sort INTEGER DEFAULT 0
+        )
+    `);
+    
+    // 创建网站设置表
+    db.run(`
+        CREATE TABLE IF NOT EXISTS website_settings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            setting_key TEXT NOT NULL UNIQUE,
+            setting_value TEXT,
+            description TEXT,
+            created_at TEXT,
+            updated_at TEXT
         )
     `);
 }
@@ -161,6 +279,62 @@ async function migrateData(db) {
     linkStmt.free();
     
     console.log('分类和链接数据迁移完成');
+    
+    // 迁移搜索引擎数据
+    const searchEnginesData = [
+        { engine_name: '百度搜索', engine_key: 'baidu', engine_url: 'https://www.baidu.com/s?wd=', sort: 1 },
+        { engine_name: '谷歌搜索', engine_key: 'google', engine_url: 'https://www.google.com/search?q=', sort: 2 },
+        { engine_name: '必应搜索', engine_key: 'bing', engine_url: 'https://www.bing.com/search?q=', sort: 3 },
+        { engine_name: '360搜索', engine_key: 'so', engine_url: 'https://www.so.com/s?q=', sort: 4 }
+    ];
+    
+    const searchEngineStmt = db.prepare(`
+        INSERT INTO search_engines (engine_name, engine_key, engine_url, sort) VALUES ($engine_name, $engine_key, $engine_url, $sort)
+    `);
+    
+    searchEnginesData.forEach(engine => {
+        searchEngineStmt.run({
+            $engine_name: engine.engine_name,
+            $engine_key: engine.engine_key,
+            $engine_url: engine.engine_url,
+            $sort: engine.sort
+        });
+    });
+    
+    searchEngineStmt.free();
+    console.log('搜索引擎数据迁移完成');
+    
+    // 迁移网站设置数据
+    const websiteSettingsData = [
+        { key: 'site_title', value: '导航站', description: '网站标题' },
+        { key: 'site_logo', value: '', description: '网站LOGO URL' },
+        { key: 'site_keywords', value: '导航站,实用工具,网址导航', description: '站点关键词' },
+        { key: 'site_description', value: '一个简洁实用的网址导航站', description: '站点描述' },
+        { key: 'site_copyright', value: '© 2024 导航站. All rights reserved.', description: '版权信息' },
+        { key: 'site_icp', value: '', description: '备案信息' },
+        { key: 'site_footer', value: '', description: '自定义footer' },
+        { key: 'site_footer_custom', value: '', description: '站点底部自定义HTML代码' }
+    ];
+    
+    const websiteSettingStmt = db.prepare(`
+        INSERT INTO website_settings (setting_key, setting_value, description, created_at, updated_at) 
+        VALUES ($key, $value, $description, $created_at, $updated_at)
+    `);
+    
+    const currentTime = new Date().toISOString();
+    
+    websiteSettingsData.forEach(setting => {
+        websiteSettingStmt.run({
+            $key: setting.key,
+            $value: setting.value,
+            $description: setting.description,
+            $created_at: currentTime,
+            $updated_at: currentTime
+        });
+    });
+    
+    websiteSettingStmt.free();
+    console.log('网站设置数据迁移完成');
     console.log('数据迁移完成');
 }
 

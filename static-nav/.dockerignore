@@ -1,0 +1,36 @@
+# 忽略node_modules目录（容器内会重新安装）
+node_modules/
+
+# 忽略npm日志
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 忽略Git相关文件
+.git/
+.gitignore
+
+# 忽略IDE相关文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 忽略操作系统相关文件
+.DS_Store
+Thumbs.db
+
+# 忽略构建产物
+dist/
+build/
+
+# 忽略环境变量文件
+.env
+.env.local
+.env.*.local
+
+# 忽略测试文件
+*.test.js
+*.spec.js
+/test
+/tests

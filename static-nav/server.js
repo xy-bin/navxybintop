@@ -4,6 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const session = require('express-session');
 const bcrypt = require('bcryptjs');
+const https = require('https');
 
 // 导入SQLite数据库模块
 const { initDatabase, getDb, saveDbChanges } = require('./db-sqlite.js');
@@ -40,10 +41,13 @@ app.use(session({
 // 管理员用户（实际项目中应该存储在数据库中）
 const adminUser = {
     id: 1,
-    username: 'admin',
-    // 密码：admin123（已加密）
-    password: '$2b$10$0hMcGAS5V9E1hM0DiYV0k.MlalCd6Z16rRJ1xj12wBvBhtVY.nLn.'
+    username: 'xybin',
+    // 密码：zxcvbnm...（已加密）
+    password: '$2b$10$ZtZRznW0MjLHSo8GNtIWq.ISQAq5BZ9SfMj7v8N1kHwSYw6cAnh.G'
 };
+
+// 一键添加书签的Token（用于验证请求合法性）
+const jsAddToken = '291b848e68a5949f3e57b5490015b02f';
 
 // 检查用户是否已登录的中间件
 function isAuthenticated(req, res, next) {
@@ -100,6 +104,85 @@ app.post('/api/logout', (req, res) => {
         }
         res.json({ success: true, message: '登出成功' });
     });
+});
+
+// 简单测试API端点（不依赖数据库）
+app.get('/api/simple-test', (req, res) => {
+    res.send('简单测试API正常工作');
+});
+
+// 网站设置API
+
+// 获取所有网站设置
+app.get('/api/website-settings', (req, res) => {
+    try {
+        const results = db.exec('SELECT setting_key, setting_value FROM website_settings');
+        
+        // 转换为键值对格式
+        const settingsMap = {};
+        if (results && results.length > 0 && results[0].values) {
+            const rows = results[0].values;
+            const columns = results[0].columns;
+            
+            rows.forEach(row => {
+                const setting = {};
+                columns.forEach((column, index) => {
+                    setting[column] = row[index];
+                });
+                settingsMap[setting.setting_key] = setting.setting_value;
+            });
+        }
+        
+        res.json({ success: true, data: settingsMap });
+    } catch (error) {
+        console.error('获取网站设置失败:', error);
+        res.status(500).json({ success: false, message: '获取网站设置失败' });
+    }
+});
+
+// 保存网站设置
+app.post('/api/website-settings', isAuthenticated, (req, res) => {
+    try {
+        const settings = req.body;
+        const now = new Date().toISOString();
+        
+        // 确保数据库实例存在
+        if (!db) {
+            return res.status(500).json({ success: false, message: '数据库连接失败' });
+        }
+        
+        // 更新每个设置项
+        for (const [key, value] of Object.entries(settings)) {
+            // 检查记录是否存在，如果不存在则插入
+            const checkResult = db.exec(`SELECT COUNT(*) as count FROM website_settings WHERE setting_key = '${key}'`);
+            const count = checkResult && checkResult[0] && checkResult[0].values ? checkResult[0].values[0][0] : 0;
+            
+            if (count > 0) {
+                // 更新现有记录
+                db.run(
+                    `UPDATE website_settings 
+                     SET setting_value = ?, updated_at = ? 
+                     WHERE setting_key = ?`,
+                    [value, now, key]
+                );
+            } else {
+                // 插入新记录
+                db.run(
+                    `INSERT INTO website_settings (setting_key, setting_value, description, created_at, updated_at) 
+                     VALUES (?, ?, ?, ?, ?)`,
+                    [key, value, `${key}设置`, now, now]
+                );
+            }
+        }
+        
+        // 保存数据库更改
+        saveDbChanges(db);
+        
+        res.json({ success: true, message: '网站设置保存成功' });
+    } catch (error) {
+        console.error('保存网站设置失败:', error);
+        res.status(500).json({ success: false, message: `保存网站设置失败: ${error.message}` });
+    }
 });
 
 // 检查登录状态API
@@ -249,7 +332,11 @@ app.use((req, res, next) => {
 
 // 确保所有JSON API响应使用UTF-8编码
 app.use('/api/', (req, res, next) => {
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  // 不为/api/v1/jsadd端点设置JSON Content-Type，因为它返回HTML
+  // 注意：req.path是相对于/api/的，所以路径是/v1/jsadd
+  if (req.path !== '/v1/jsadd') {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  }
   next();
 });
 
@@ -291,6 +378,41 @@ function formatResults(results) {
         return [];
     }
 }
+
+// 记录访问量的中间件
+function trackVisits(req, res, next) {
+    // 跟踪所有页面的访问量，但排除API调用和静态资源
+    const isApiCall = req.path.startsWith('/api/');
+    const isStaticResource = /\.(css|js|jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot)$/i.test(req.path);
+    
+    if (!isApiCall && !isStaticResource) {
+        try {
+            const db = getDatabase();
+            const today = new Date().toISOString().split('T')[0]; // 格式：YYYY-MM-DD
+            
+            // 检查今天的访问记录是否存在
+            const existingVisit = formatResults(db.exec(`SELECT * FROM visits WHERE visit_date = '${today}'`));
+            
+            if (existingVisit.length > 0) {
+                // 更新现有记录
+                db.run(`UPDATE visits SET visit_count = visit_count + 1 WHERE visit_date = '${today}'`);
+            } else {
+                // 创建新记录
+                db.run(`INSERT INTO visits (visit_date, visit_count) VALUES ('${today}', 1)`);
+            }
+            
+            // 保存数据库更改
+            saveDbChanges(db);
+        } catch (error) {
+            console.error('记录访问量失败:', error);
+        }
+    }
+    
+    next();
+}
+
+// 应用访问量跟踪中间件
+app.use(trackVisits);
 
 // API端点：获取所有数据（公开访问）
 app.get('/api/data', async (req, res) => {
@@ -383,6 +505,908 @@ app.get('/api/bookmarks/:id', isAuthenticated, (req, res) => {
     } catch (error) {
         console.error('获取书签详情失败:', error);
         res.status(500).json({ success: false, message: '获取书签详情失败' });
+    }
+});
+
+// API端点：一键添加书签（用于外部网站的书签工具栏按钮，不需要登录但需要验证token）
+// 为这个特定端点设置Content-Type中间件
+app.get('/api/v1/jsadd', (req, res, next) => {
+    // 明确设置Content-Type为HTML，覆盖任何之前的设置
+    res.header('Content-Type', 'text/html; charset=utf-8');
+    next();
+}, async (req, res) => {
+    try {
+        // 验证token
+        const { token, name, url } = req.query;
+        
+        if (token !== jsAddToken) {
+            return res.status(401).send(`
+                <!DOCTYPE html>
+                <html lang="zh-CN">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>未授权</title>
+                    <style>
+                        * {
+                            margin: 0;
+                            padding: 0;
+                            box-sizing: border-box;
+                        }
+                        
+                        body {
+                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            height: 100vh;
+                            margin: 0;
+                            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                            color: #333;
+                            overflow: hidden;
+                        }
+                        
+                        .error-container {
+                            background: white;
+                            border-radius: 16px;
+                            padding: 3rem;
+                            text-align: center;
+                            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                            animation: fadeIn 0.5s ease-out;
+                            max-width: 400px;
+                            width: 90%;
+                            overflow: hidden;
+                        }
+                        
+                        @keyframes fadeIn {
+                            from {
+                                opacity: 0;
+                                transform: translateY(-20px);
+                            }
+                            to {
+                                opacity: 1;
+                                transform: translateY(0);
+                            }
+                        }
+                        
+                        .error-icon {
+                            width: 80px;
+                            height: 80px;
+                            background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+                            border-radius: 50%;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            margin: 0 auto 1.5rem;
+                            animation: bounce 1s ease-out;
+                        }
+                        
+                        @keyframes bounce {
+                            0%, 100% {
+                                transform: scale(1);
+                            }
+                            50% {
+                                transform: scale(1.1);
+                            }
+                        }
+                        
+                        .error-icon::before {
+                            content: '×';
+                            color: white;
+                            font-size: 48px;
+                            font-weight: bold;
+                        }
+                        
+                        h1 {
+                            font-size: 2rem;
+                            margin-bottom: 1rem;
+                            color: #2d3748;
+                        }
+                        
+                        p {
+                            font-size: 1.1rem;
+                            margin-bottom: 2rem;
+                            color: #4a5568;
+                            line-height: 1.5;
+                        }
+                        
+                        .close-btn {
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            color: white;
+                            border: none;
+                            padding: 0.75rem 2rem;
+                            border-radius: 8px;
+                            font-size: 1rem;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+                        }
+                        
+                        .close-btn:hover {
+                            transform: translateY(-2px);
+                            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+                        }
+                        
+                        @media (max-width: 480px) {
+                            .error-container {
+                                padding: 2rem 1.5rem;
+                            }
+                            
+                            h1 {
+                                font-size: 1.5rem;
+                            }
+                            
+                            p {
+                                font-size: 1rem;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="error-container">
+                        <div class="error-icon"></div>
+                        <h1>未授权</h1>
+                        <p>无效的token，请检查您的书签代码是否正确。</p>
+                        <button class="close-btn" onclick="window.parent.postMessage('close-modal', '*')">关闭窗口</button>
+                    </div>
+                </body>
+                </html>
+            `);
+        }
+        
+        if (!name || !url) {
+            return res.status(400).send(`
+                <!DOCTYPE html>
+                <html lang="zh-CN">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>参数错误</title>
+                    <style>
+                        * {
+                            margin: 0;
+                            padding: 0;
+                            box-sizing: border-box;
+                        }
+                        
+                        body {
+                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            min-height: 100vh;
+                            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                            color: #333;
+                        }
+                        
+                        .error-container {
+                            background: white;
+                            border-radius: 16px;
+                            padding: 3rem;
+                            text-align: center;
+                            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                            animation: fadeIn 0.5s ease-out;
+                            max-width: 400px;
+                            width: 90%;
+                        }
+                        
+                        @keyframes fadeIn {
+                            from {
+                                opacity: 0;
+                                transform: translateY(-20px);
+                            }
+                            to {
+                                opacity: 1;
+                                transform: translateY(0);
+                            }
+                        }
+                        
+                        .error-icon {
+                            width: 80px;
+                            height: 80px;
+                            background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+                            border-radius: 50%;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            margin: 0 auto 1.5rem;
+                            animation: bounce 1s ease-out;
+                        }
+                        
+                        @keyframes bounce {
+                            0%, 100% {
+                                transform: scale(1);
+                            }
+                            50% {
+                                transform: scale(1.1);
+                            }
+                        }
+                        
+                        .error-icon::before {
+                            content: '×';
+                            color: white;
+                            font-size: 48px;
+                            font-weight: bold;
+                        }
+                        
+                        h1 {
+                            font-size: 2rem;
+                            margin-bottom: 1rem;
+                            color: #2d3748;
+                        }
+                        
+                        p {
+                            font-size: 1.1rem;
+                            margin-bottom: 2rem;
+                            color: #4a5568;
+                            line-height: 1.5;
+                        }
+                        
+                        .close-btn {
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            color: white;
+                            border: none;
+                            padding: 0.75rem 2rem;
+                            border-radius: 8px;
+                            font-size: 1rem;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+                        }
+                        
+                        .close-btn:hover {
+                            transform: translateY(-2px);
+                            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+                        }
+                        
+                        @media (max-width: 480px) {
+                            .error-container {
+                                padding: 2rem 1.5rem;
+                            }
+                            
+                            h1 {
+                                font-size: 1.5rem;
+                            }
+                            
+                            p {
+                                font-size: 1rem;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="error-container">
+                        <div class="error-icon"></div>
+                        <h1>参数错误</h1>
+                        <p>缺少必要的参数，请确保网址和名称都已提供。</p>
+                        <button class="close-btn" onclick="window.parent.postMessage('close-modal', '*')">关闭窗口</button>
+                    </div>
+                </body>
+                </html>
+            `);
+        }
+        
+        const db = getDatabase();
+        
+        // 检查URL是否已存在
+        const existingLinks = formatResults(db.exec(`SELECT * FROM links WHERE link_url = '${url}'`));
+        if (existingLinks.length > 0) {
+            return res.send(`
+                <!DOCTYPE html>
+                <html lang="zh-CN">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>书签已存在</title>
+                    <style>
+                        * {
+                            margin: 0;
+                            padding: 0;
+                            box-sizing: border-box;
+                        }
+                        
+                        body {
+                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            min-height: 100vh;
+                            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                            color: #333;
+                        }
+                        
+                        .error-container {
+                            background: white;
+                            border-radius: 16px;
+                            padding: 3rem;
+                            text-align: center;
+                            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                            animation: fadeIn 0.5s ease-out;
+                            max-width: 400px;
+                            width: 90%;
+                        }
+                        
+                        @keyframes fadeIn {
+                            from {
+                                opacity: 0;
+                                transform: translateY(-20px);
+                            }
+                            to {
+                                opacity: 1;
+                                transform: translateY(0);
+                            }
+                        }
+                        
+                        .error-icon {
+                            width: 80px;
+                            height: 80px;
+                            background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+                            border-radius: 50%;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            margin: 0 auto 1.5rem;
+                            animation: bounce 1s ease-out;
+                        }
+                        
+                        @keyframes bounce {
+                            0%, 100% {
+                                transform: scale(1);
+                            }
+                            50% {
+                                transform: scale(1.1);
+                            }
+                        }
+                        
+                        .error-icon::before {
+                            content: '×';
+                            color: white;
+                            font-size: 48px;
+                            font-weight: bold;
+                        }
+                        
+                        h1 {
+                            font-size: 2rem;
+                            margin-bottom: 1rem;
+                            color: #2d3748;
+                        }
+                        
+                        p {
+                            font-size: 1.1rem;
+                            margin-bottom: 2rem;
+                            color: #4a5568;
+                            line-height: 1.5;
+                        }
+                        
+                        .close-btn {
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            color: white;
+                            border: none;
+                            padding: 0.75rem 2rem;
+                            border-radius: 8px;
+                            font-size: 1rem;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+                        }
+                        
+                        .close-btn:hover {
+                            transform: translateY(-2px);
+                            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+                        }
+                        
+                        @media (max-width: 480px) {
+                            .error-container {
+                                padding: 2rem 1.5rem;
+                            }
+                            
+                            h1 {
+                                font-size: 1.5rem;
+                            }
+                            
+                            p {
+                                font-size: 1rem;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="error-container">
+                        <div class="error-icon"></div>
+                        <h1>书签已存在</h1>
+                        <p>该网址已经存在于您的书签列表中。</p>
+                        <button class="close-btn" onclick="window.parent.postMessage('close-modal', '*')">关闭窗口</button>
+                    </div>
+                </body>
+                </html>
+            `);
+        }
+        
+        // 确保有有效的分类ID，默认使用"未分类"分类
+        let categoryId = null;
+        
+        // 首先检查是否存在"未分类"分类
+        const uncategorizedCategory = formatResults(db.exec("SELECT * FROM categories WHERE category_name = '未分类'"));
+        
+        if (uncategorizedCategory.length > 0) {
+            categoryId = uncategorizedCategory[0].category_id;
+        } else {
+            // 检查是否有其他分类
+            const categories = formatResults(db.exec('SELECT * FROM categories ORDER BY sort ASC'));
+            
+            if (categories.length > 0) {
+                // 如果有其他分类，创建"未分类"分类
+                const maxCategoryIdResult = formatResults(db.exec('SELECT MAX(category_id) as max_id FROM categories'));
+                const maxCategoryIdValue = maxCategoryIdResult.length > 0 && maxCategoryIdResult[0] && maxCategoryIdResult[0].max_id !== null ? maxCategoryIdResult[0].max_id : 0;
+                categoryId = maxCategoryIdValue + 1;
+                
+                db.exec(`INSERT INTO categories (category_id, category_name, sort) VALUES (${categoryId}, '未分类', 0)`);
+                saveDbChanges(db);
+            } else {
+                // 如果没有任何分类，创建"未分类"分类
+                categoryId = 1;
+                db.exec(`INSERT INTO categories (category_id, category_name, sort) VALUES (${categoryId}, '未分类', 0)`);
+                saveDbChanges(db);
+            }
+        }
+        
+        // 生成书签ID
+        const maxBookmarkIdResult = formatResults(db.exec('SELECT MAX(link_id) as max_id FROM links'));
+        const maxBookmarkIdValue = maxBookmarkIdResult.length > 0 && maxBookmarkIdResult[0] && maxBookmarkIdResult[0].max_id !== null ? maxBookmarkIdResult[0].max_id : 0;
+        const newBookmarkId = maxBookmarkIdValue + 1;
+        
+        // 获取当前时间
+        const currentTime = new Date().toISOString();
+        
+        // 尝试获取网站的描述和图标
+        let linkIcon = '';
+        let linkDesc = '';
+        
+        // 仅在开发或测试环境中启用此功能
+        // 注意：生产环境中应该使用更安全的HTML解析方法
+        const fetchWebsiteInfo = (url) => {
+            return new Promise((resolve, reject) => {
+                // 检查URL是否以https开头
+                if (!url.startsWith('https://')) {
+                    resolve({ desc: '', icon: '' });
+                    return;
+                }
+                
+                // 解析URL获取主机名
+                const urlObj = new URL(url);
+                const hostname = urlObj.hostname;
+                
+                const options = {
+                    hostname: hostname,
+                    path: '/',
+                    method: 'GET',
+                    timeout: 5000
+                };
+                
+                const req = https.request(options, (res) => {
+                    let data = '';
+                    
+                    res.on('data', (chunk) => {
+                        data += chunk;
+                    });
+                    
+                    res.on('end', () => {
+                        try {
+                            // 添加调试信息
+                            console.log('尝试解析网站HTML内容');
+                            console.log('HTML内容前500字符:', data.substring(0, 500));
+                            
+                            // 使用正则表达式获取网站描述
+                            const descPattern = /<meta[^>]*name=["'](?:description|Description)["'][^>]*content=["']([^"']+)["']/i;
+                            const ogDescPattern = /<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i;
+                            
+                            let desc = '';
+                            const descMatch = data.match(descPattern);
+                            if (descMatch) {
+                                desc = descMatch[1] || '';
+                                console.log('找到网站描述:', desc);
+                            } else {
+                                console.log('未找到常规网站描述');
+                                const ogDescMatch = data.match(ogDescPattern);
+                                if (ogDescMatch) {
+                                    desc = ogDescMatch[1] || '';
+                                    console.log('找到OG网站描述:', desc);
+                                } else {
+                                    console.log('未找到任何网站描述');
+                                }
+                            }
+                            
+                            // 使用正则表达式获取网站图标
+                            const iconPattern = /<link[^>]*rel=["'](?:icon|shortcut icon|apple-touch-icon)["'][^>]*href=["']([^"']+)["']/i;
+                            let icon = '';
+                            const iconMatch = data.match(iconPattern);
+                            if (iconMatch) {
+                                icon = iconMatch[1] || '';
+                                console.log('找到网站图标:', icon);
+                                
+                                // 如果图标是相对路径，转换为绝对路径
+                                if (icon && !icon.startsWith('http://') && !icon.startsWith('https://')) {
+                                    if (icon.startsWith('/')) {
+                                        icon = `${urlObj.protocol}//${hostname}${icon}`;
+                                    } else {
+                                        icon = `${urlObj.protocol}//${hostname}/${icon}`;
+                                    }
+                                    console.log('转换后的绝对图标路径:', icon);
+                                }
+                            } else {
+                                console.log('未找到网站图标');
+                            }
+                            
+                            resolve({ desc, icon });
+                        } catch (error) {
+                            reject(error);
+                        }
+                    });
+                });
+                
+                req.on('error', (error) => {
+                    reject(error);
+                });
+                
+                req.on('timeout', () => {
+                    req.destroy();
+                    reject(new Error('请求超时'));
+                });
+                
+                req.end();
+            });
+        };
+        
+        try {
+            const websiteInfo = await fetchWebsiteInfo(url);
+            linkIcon = websiteInfo.icon;
+            linkDesc = websiteInfo.desc;
+        } catch (error) {
+            console.error('获取网站描述和图标失败:', error.message);
+            // 如果获取失败，使用空字符串
+            linkIcon = '';
+            linkDesc = '';
+        }
+        
+        // 直接执行插入语句（避免使用prepared statement的finalize方法）
+        db.exec(`
+            INSERT INTO links (link_id, category_id, link_name, link_url, link_icon, link_desc, sort)
+            VALUES (${newBookmarkId}, ${categoryId}, '${name}', '${url}', '${linkIcon}', '${linkDesc}', 0)
+        `);
+        
+        // 保存数据库更改
+        saveDbChanges(db);
+        
+        // 返回美观的成功提示HTML页面
+        res.send(`
+            <!DOCTYPE html>
+            <html lang="zh-CN">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>书签添加成功</title>
+                <style>
+                    * {
+                        margin: 0;
+                        padding: 0;
+                        box-sizing: border-box;
+                    }
+                    
+                    body {
+                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            height: 100vh;
+                            margin: 0;
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            color: #333;
+                            overflow: hidden;
+                        }
+                    
+                    .success-container {
+                            background: white;
+                            border-radius: 16px;
+                            padding: 2rem;
+                            text-align: center;
+                            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                            animation: fadeIn 0.5s ease-out;
+                            max-width: 400px;
+                            width: 90%;
+                            overflow: hidden;
+                        }
+                    
+                    @keyframes fadeIn {
+                        from {
+                            opacity: 0;
+                            transform: translateY(-20px);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                    }
+                    
+                    .success-icon {
+                        width: 80px;
+                        height: 80px;
+                        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+                        border-radius: 50%;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        margin: 0 auto 1.5rem;
+                        animation: bounce 1s ease-out;
+                    }
+                    
+                    @keyframes bounce {
+                        0%, 100% {
+                            transform: scale(1);
+                        }
+                        50% {
+                            transform: scale(1.1);
+                        }
+                    }
+                    
+                    .success-icon::before {
+                        content: '✓';
+                        color: white;
+                        font-size: 48px;
+                        font-weight: bold;
+                    }
+                    
+                    h1 {
+                        font-size: 2rem;
+                        margin-bottom: 1rem;
+                        color: #2d3748;
+                    }
+                    
+                    p {
+                        font-size: 1.1rem;
+                        margin-bottom: 2rem;
+                        color: #4a5568;
+                        line-height: 1.5;
+                    }
+                    
+                    .details {
+                        background: #f7fafc;
+                        padding: 1rem;
+                        border-radius: 8px;
+                        margin-bottom: 2rem;
+                        text-align: left;
+                    }
+                    
+                    .detail-item {
+                        margin-bottom: 0.5rem;
+                        font-size: 0.9rem;
+                    }
+                    
+                    .detail-label {
+                        font-weight: 600;
+                        color: #2d3748;
+                    }
+                    
+                    .detail-value {
+                        color: #4a5568;
+                        word-break: break-all;
+                    }
+                    
+                    .close-btn {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        border: none;
+                        padding: 0.75rem 2rem;
+                        border-radius: 8px;
+                        font-size: 1rem;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+                    }
+                    
+                    .close-btn:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+                    }
+                    
+                    .timer {
+                        margin-top: 1rem;
+                        font-size: 0.9rem;
+                        color: #718096;
+                    }
+                    
+                    @media (max-width: 480px) {
+                        .success-container {
+                            padding: 2rem 1.5rem;
+                        }
+                        
+                        h1 {
+                            font-size: 1.5rem;
+                        }
+                        
+                        p {
+                            font-size: 1rem;
+                        }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="success-container">
+                    <div class="success-icon"></div>
+                    <h1>书签添加成功！</h1>
+                    <p>您的网站已成功添加到书签列表中。</p>
+                    <div class="details">
+                        <div class="detail-item">
+                            <span class="detail-label">网站名称：</span>
+                            <span class="detail-value">${name}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">网站地址：</span>
+                            <span class="detail-value">${url}</span>
+                        </div>
+                    </div>
+                    <button class="close-btn" onclick="window.parent.postMessage('close-modal', '*')">关闭窗口</button>
+                    <div class="timer">窗口将在 <span id="countdown">3</span> 秒后自动关闭...</div>
+                </div>
+                
+                <script>
+                    // 倒计时自动关闭窗口
+                    let countdown = 3;
+                    const countdownElement = document.getElementById('countdown');
+                    
+                    const timer = setInterval(() => {
+                        countdown--;
+                        countdownElement.textContent = countdown;
+                        
+                        if (countdown <= 0) {
+                            clearInterval(timer);
+                            window.parent.postMessage('close-modal', '*');
+                        }
+                    }, 1000);
+                </script>
+            </body>
+            </html>
+        `);
+        
+    } catch (error) {
+        console.error('一键添加书签失败:', error);
+        // 返回美观的错误提示HTML页面
+        res.status(500).send(`
+            <!DOCTYPE html>
+            <html lang="zh-CN">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>添加书签失败</title>
+                <style>
+                    * {
+                        margin: 0;
+                        padding: 0;
+                        box-sizing: border-box;
+                    }
+                    
+                    body {
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        height: 100vh;
+                        margin: 0;
+                        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                        color: #333;
+                        overflow: hidden;
+                    }
+                    
+                    .error-container {
+                        background: white;
+                        border-radius: 16px;
+                        padding: 2rem;
+                        text-align: center;
+                        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                        animation: fadeIn 0.5s ease-out;
+                        max-width: 400px;
+                        width: 90%;
+                        overflow: hidden;
+                    }
+                    
+                    @keyframes fadeIn {
+                        from {
+                            opacity: 0;
+                            transform: translateY(-20px);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                    }
+                    
+                    .error-icon {
+                        width: 80px;
+                        height: 80px;
+                        background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+                        border-radius: 50%;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        margin: 0 auto 1.5rem;
+                        animation: bounce 1s ease-out;
+                    }
+                    
+                    @keyframes bounce {
+                        0%, 100% {
+                            transform: scale(1);
+                        }
+                        50% {
+                            transform: scale(1.1);
+                        }
+                    }
+                    
+                    .error-icon::before {
+                        content: '×';
+                        color: white;
+                        font-size: 48px;
+                        font-weight: bold;
+                    }
+                    
+                    h1 {
+                        font-size: 2rem;
+                        margin-bottom: 1rem;
+                        color: #2d3748;
+                    }
+                    
+                    p {
+                        font-size: 1.1rem;
+                        margin-bottom: 2rem;
+                        color: #4a5568;
+                        line-height: 1.5;
+                    }
+                    
+                    .close-btn {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        border: none;
+                        padding: 0.75rem 2rem;
+                        border-radius: 8px;
+                        font-size: 1rem;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+                    }
+                    
+                    .close-btn:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+                    }
+                    
+                    @media (max-width: 480px) {
+                        .error-container {
+                            padding: 2rem 1.5rem;
+                        }
+                        
+                        h1 {
+                            font-size: 1.5rem;
+                        }
+                        
+                        p {
+                            font-size: 1rem;
+                        }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="error-container">
+                    <div class="error-icon"></div>
+                    <h1>添加书签失败</h1>
+                    <p>抱歉，添加书签时遇到了问题。请稍后重试或检查网络连接。</p>
+                    <button class="close-btn" onclick="window.close()">关闭窗口</button>
+                </div>
+            </body>
+            </html>
+        `);
     }
 });
 
@@ -559,7 +1583,17 @@ app.get('/api/categories', isAuthenticated, (req, res) => {
     try {
         const db = getDatabase();
         const categories = formatResults(db.exec('SELECT * FROM categories ORDER BY sort ASC'));
-        res.json({ success: true, data: categories });
+        
+        // 为每个分类获取链接数量
+        const categoriesWithCount = categories.map(category => {
+            const linkCountResult = formatResults(db.exec(`SELECT COUNT(*) as count FROM links WHERE category_id = ${category.category_id}`));
+            return {
+                ...category,
+                link_count: linkCountResult[0].count || 0
+            };
+        });
+        
+        res.json({ success: true, data: categoriesWithCount });
     } catch (error) {
         console.error('获取分类失败:', error);
         res.status(500).json({ success: false, message: '获取分类失败' });
@@ -910,15 +1944,40 @@ app.get('/api/dashboard', isAuthenticated, (req, res) => {
         const totalBookmarks = formatResults(db.exec('SELECT COUNT(*) as count FROM links'));
         const totalCategories = formatResults(db.exec('SELECT COUNT(*) as count FROM categories'));
         
+        // 获取今天的访问量
+        const today = new Date().toISOString().split('T')[0]; // 格式：YYYY-MM-DD
+        const todayVisits = formatResults(db.exec(`SELECT SUM(visit_count) as count FROM visits WHERE visit_date = '${today}'`));
+        
+        // 获取总访问量
+        const totalVisits = formatResults(db.exec('SELECT SUM(visit_count) as count FROM visits'));
+        
         // 计算活跃用户数（这里简单返回1，实际项目中应该从用户表获取）
         const activeUsers = [{ count: 1 }];
+        
+        // 获取最近7天的访问量趋势数据
+        const visitTrend = [];
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            const formattedDate = date.toISOString().split('T')[0]; // 格式：YYYY-MM-DD
+            const displayDate = `${date.getMonth() + 1}月${date.getDate()}日`;
+            
+            const visits = formatResults(db.exec(`SELECT SUM(visit_count) as count FROM visits WHERE visit_date = '${formattedDate}'`));
+            visitTrend.push({
+                date: displayDate,
+                visits: visits[0].count || 0
+            });
+        }
         
         res.json({ 
             success: true, 
             data: {
                 total_bookmarks: totalBookmarks[0].count || 0,
                 total_categories: totalCategories[0].count || 0,
-                active_users: activeUsers[0].count || 0
+                active_users: activeUsers[0].count || 0,
+                today_visits: todayVisits[0].count || 0,
+                total_visits: totalVisits[0].count || 0,
+                visit_trend: visitTrend
             }
         });
     } catch (error) {
@@ -1226,7 +2285,6 @@ app.put('/api/image-sources/:id', isAuthenticated, (req, res) => {
 // API端点：删除图片源（需要登录）
 app.delete('/api/image-sources/:id', isAuthenticated, (req, res) => {
     try {
-        const db = getDatabase();
         const sourceId = parseInt(req.params.id);
         
         // 删除数据
@@ -1241,6 +2299,114 @@ app.delete('/api/image-sources/:id', isAuthenticated, (req, res) => {
         res.status(500).json({ success: false, message: '删除图片源失败' });
     }
 });
+
+// ------------------------------
+// 搜索引擎管理API
+// ------------------------------
+
+// API端点：获取所有搜索引擎（公开访问）
+app.get('/api/search-engines', (req, res) => {
+    try {
+        const engines = formatResults(db.exec('SELECT * FROM search_engines ORDER BY sort ASC'));
+        res.json({ success: true, data: engines });
+    } catch (error) {
+        console.error('获取搜索引擎失败:', error);
+        res.status(500).json({ success: false, message: '获取搜索引擎失败' });
+    }
+});
+
+// API端点：获取单个搜索引擎（需要登录）
+app.get('/api/search-engines/:id', isAuthenticated, (req, res) => {
+    try {
+        const engineId = parseInt(req.params.id);
+        
+        // 获取单个搜索引擎
+        const engines = formatResults(db.exec(`SELECT * FROM search_engines WHERE search_engine_id = ${engineId}`));
+        
+        if (engines.length === 0) {
+            return res.status(404).json({ success: false, message: '搜索引擎不存在' });
+        }
+        
+        res.json({ success: true, data: engines[0] });
+    } catch (error) {
+        console.error('获取搜索引擎详情失败:', error);
+        res.status(500).json({ success: false, message: '获取搜索引擎详情失败' });
+    }
+});
+
+// API端点：创建搜索引擎（需要登录）
+app.post('/api/search-engines', isAuthenticated, (req, res) => {
+    try {
+        const { engine_name, engine_key, engine_url, sort } = req.body;
+        
+        // 验证必填字段
+        if (!engine_name || !engine_key || !engine_url) {
+            return res.status(400).json({ success: false, message: '请填写完整的搜索引擎信息' });
+        }
+        
+        // 检查engine_key是否已存在
+        const existingEngine = formatResults(db.exec(`SELECT * FROM search_engines WHERE engine_key = '${engine_key}'`));
+        if (existingEngine.length > 0) {
+            return res.status(400).json({ success: false, message: '搜索引擎标识已存在' });
+        }
+        
+        // 插入新搜索引擎
+        db.run(`
+            INSERT INTO search_engines (engine_name, engine_key, engine_url, sort)
+            VALUES ('${engine_name}', '${engine_key}', '${engine_url}', ${sort || 0})
+        `);
+        
+        // 保存数据库更改
+        saveDbChanges(db);
+        
+        res.json({ success: true, message: '搜索引擎创建成功' });
+    } catch (error) {
+        console.error('创建搜索引擎失败:', error);
+        res.status(500).json({ success: false, message: '创建搜索引擎失败' });
+    }
+});
+
+// API端点：更新搜索引擎（需要登录）
+app.put('/api/search-engines/:id', isAuthenticated, (req, res) => {
+    try {
+        const engineId = parseInt(req.params.id);
+        const { engine_name, engine_key, engine_url, sort } = req.body;
+        
+        // 验证必填字段
+        if (!engine_name || !engine_key || !engine_url) {
+            return res.status(400).json({ success: false, message: '请填写完整的搜索引擎信息' });
+        }
+        
+        // 检查搜索引擎是否存在
+        const engine = formatResults(db.exec(`SELECT * FROM search_engines WHERE search_engine_id = ${engineId}`));
+        if (engine.length === 0) {
+            return res.status(404).json({ success: false, message: '搜索引擎不存在' });
+        }
+        
+        // 检查engine_key是否已被其他搜索引擎使用
+        const existingEngine = formatResults(db.exec(`SELECT * FROM search_engines WHERE engine_key = '${engine_key}' AND search_engine_id != ${engineId}`));
+        if (existingEngine.length > 0) {
+            return res.status(400).json({ success: false, message: '搜索引擎标识已存在' });
+        }
+        
+        // 更新搜索引擎
+        db.run(`
+            UPDATE search_engines
+            SET engine_name = '${engine_name}', engine_key = '${engine_key}', engine_url = '${engine_url}', sort = ${sort || 0}
+            WHERE search_engine_id = ${engineId}
+        `);
+        
+        // 保存数据库更改
+        saveDbChanges(db);
+        
+        res.json({ success: true, message: '搜索引擎更新成功' });
+    } catch (error) {
+        console.error('更新搜索引擎失败:', error);
+        res.status(500).json({ success: false, message: '更新搜索引擎失败' });
+    }
+});
+
+
 
 // 静态文件服务 - 放在所有API端点之后
 app.use(express.static(__dirname));
