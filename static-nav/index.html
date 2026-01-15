@@ -3,9 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title id="site-title">我的聚合导航站</title>
-    <meta name="keywords" id="site-keywords" content="">
-    <meta name="description" id="site-description" content="">
+    <title id="site-title">我的聚合导航站 - 实用网站导航集合</title>
+    <!-- Meta标签优化 -->
+    <meta name="keywords" id="site-keywords" content="聚合导航,网站导航,实用工具,常用网站,网址导航,导航站">
+    <meta name="description" id="site-description" content="我的聚合导航站，为您提供精选常用网站导航，包括搜索引擎、社交媒体、开发工具、学习资源等各类实用网站集合。">
+    <meta name="author" content="xy-bin">
+    <meta name="copyright" content="© 2026 我的聚合导航站">
+    <meta name="robots" content="index, follow">
+    <meta name="googlebot" content="index, follow">
+    <meta name="generator" content="HTML5, Tailwind CSS, JavaScript">
+    <meta name="theme-color" content="#3B82F6">
+    <meta name="msapplication-TileColor" content="#3B82F6">
+    <!-- 开放图谱(Open Graph)标签 -->
+    <meta property="og:title" content="我的聚合导航站 - 实用网站导航集合">
+    <meta property="og:description" content="我的聚合导航站，为您提供精选常用网站导航，包括搜索引擎、社交媒体、开发工具、学习资源等各类实用网站集合。">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://navxybintop.com/">
+    <meta property="og:image" content="https://navxybintop.com/res/favicon.ico">
+    <meta property="og:site_name" content="我的聚合导航站">
+    <!-- Twitter Cards标签 -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="我的聚合导航站 - 实用网站导航集合">
+    <meta name="twitter:description" content="我的聚合导航站，为您提供精选常用网站导航，包括搜索引擎、社交媒体、开发工具、学习资源等各类实用网站集合。">
+    <meta name="twitter:image" content="https://navxybintop.com/res/favicon.ico">
+    <meta name="twitter:creator" content="@xy-bin">
+    <!-- 规范URL标签 -->
+    <link rel="canonical" href="https://navxybintop.com/">
     <!-- 1. 引入Tailwind CSS CDN（样式布局核心） -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 2. 引入Font Awesome（图标库） -->
@@ -14,8 +37,35 @@
     <script src="node_modules/jquery/dist/jquery.min.js"></script>
     <!-- 4. 网站图标（可选） -->
     <link rel="icon" id="site-favicon" href="res/favicon.ico" type="image/x-icon">
+    <link rel="apple-touch-icon" href="res/favicon.ico">
+    <link rel="mask-icon" href="res/favicon.ico" color="#3B82F6">
     <!-- 5. Tailwind 自定义配置（可选） -->
     <script src="js/tailwind-config.js"></script>
+    <!-- 结构化数据（JSON-LD） -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "我的聚合导航站",
+        "description": "我的聚合导航站，为您提供精选常用网站导航，包括搜索引擎、社交媒体、开发工具、学习资源等各类实用网站集合。",
+        "url": "https://navxybintop.com/",
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://navxybintop.com/search?q={search_term_string}",
+            "query-input": "required name=search_term_string"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "xy-bin",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "https://navxybintop.com/res/favicon.ico",
+                "width": 32,
+                "height": 32
+            }
+        }
+    }
+    </script>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 dark:text-white min-h-screen">
     <!-- 头部区域（时间、搜索框、公告） -->
