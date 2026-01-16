@@ -57,5 +57,6 @@ test-*.js
 
 # Other
 *.md
+!/DEPLOYMENT.md
 ../*.js
 ../*.zip
