@@ -209,6 +209,9 @@ function initAdminPage() {
     
     // 初始化网站设置管理
     initWebsiteSettings();
+    
+    // 初始化待审核书签管理
+    initPendingBookmarks();
 }
 
 
@@ -1810,6 +1813,20 @@ function initEventListeners() {
         $("#announcement-form").addClass("hidden");
     });
     
+    // 批准待审核书签按钮
+    $(document).on("click", ".approve-pending-btn", function(e) {
+        e.stopPropagation();
+        const id = $(this).data("id");
+        approvePendingBookmark(id);
+    });
+    
+    // 拒绝待审核书签按钮
+    $(document).on("click", ".reject-pending-btn", function(e) {
+        e.stopPropagation();
+        const id = $(this).data("id");
+        rejectPendingBookmark(id);
+    });
+    
     // ------------------------
     // 事件委托绑定 - 编辑按钮
     // ------------------------
@@ -1947,7 +1964,7 @@ function bindNavigationEvents() {
         $(this).addClass("bg-primary text-white");
         
         // 隐藏所有内容区域
-        $("#dashboard, #category-management, #link-management, #theme-settings, #image-sources, #announcement-management, #search-engine-management").addClass("hidden");
+        $("#dashboard, #category-management, #link-management, #pending-bookmarks, #theme-settings, #image-sources, #announcement-management, #search-engine-management").addClass("hidden");
         
         // 显示对应的内容区域
         const target = $(this).attr("href").substring(1);
@@ -1957,6 +1974,8 @@ function bindNavigationEvents() {
             // 根据目标区域初始化对应的功能
             if (target === "search-engine-management") {
                 initSearchEngineManagement();
+            } else if (target === "pending-bookmarks") {
+                loadPendingBookmarks();
             }
         }
     });
@@ -2119,8 +2138,8 @@ function loadSearchEngines() {
         method: "GET",
         success: function(response) {
             $("#search-engine-list").empty();
-            if (response.success && response.data) {
-                response.data.forEach(engine => {
+            if (response.success && response.data && response.data.search_engines) {
+                response.data.search_engines.forEach(engine => {
                     const row = `<tr><td class="py-3 px-4">${engine.search_engine_id}</td><td class="py-3 px-4">${engine.engine_name}</td><td class="py-3 px-4">${engine.engine_key}</td><td class="py-3 px-4 truncate"><a href="${engine.engine_url}" target="_blank" title="${engine.engine_url}">${truncateUrl(engine.engine_url, 50)}</a></td><td class="py-3 px-4">${engine.sort}</td><td class="py-3 px-4 text-right"><button type="button" class="edit-search-engine-btn bg-primary text-white px-3 py-1 rounded-lg mr-2" data-id="${engine.search_engine_id}">编辑</button><button type="button" class="delete-search-engine-btn bg-red-500 text-white px-3 py-1 rounded-lg" data-id="${engine.search_engine_id}">删除</button></td></tr>`;
                     $("#search-engine-list").append(row);
                 });
@@ -2393,4 +2412,132 @@ function initWebsiteSettings() {
         e.preventDefault();
         saveWebsiteSettings();
     });
+}
+
+// ------------------------------
+// 待审核书签管理
+// ------------------------------
+
+// 初始化待审核书签管理
+function initPendingBookmarks() {
+    loadPendingBookmarks();
+    
+    // 刷新按钮点击事件
+    $("#refresh-pending-btn").on("click", function() {
+        loadPendingBookmarks();
+    });
+}
+
+// 加载待审核书签列表
+function loadPendingBookmarks() {
+    $.ajax({
+        url: "/api/pending-bookmarks",
+        method: "GET",
+        success: function(response) {
+            $("#pending-bookmark-list").empty();
+            
+            if (response.success && response.data && response.data.length > 0) {
+                // 显示列表，隐藏空状态
+                $("#pending-empty-state").addClass("hidden");
+                
+                response.data.forEach(bookmark => {
+                    const row = `<tr data-id="${bookmark.id}">
+                        <td class="py-3 px-4 text-gray-500 font-mono text-sm">${bookmark.id}</td>
+                        <td class="py-3 px-4 font-medium">
+                            <i class="${bookmark.link_icon || 'fa fa-link'} text-xl text-gray-700 mr-2"></i>
+                            ${bookmark.link_name}
+                        </td>
+                        <td class="py-3 px-4">
+                            <a href="${bookmark.link_url}" target="_blank" title="${bookmark.link_url}" class="text-blue-600 hover:text-blue-800 transition-colors duration-150">
+                                ${truncateUrl(bookmark.link_url, 30)}
+                            </a>
+                        </td>
+                        <td class="py-3 px-4">${bookmark.category_name || '未分类'}</td>
+                        <td class="py-3 px-4">${bookmark.submitter_name || '匿名'}</td>
+                        <td class="py-3 px-4">${bookmark.submitter_contact || '-'}</td>
+                        <td class="py-3 px-4 truncate max-w-xs" title="${bookmark.link_desc || ''}">${bookmark.link_desc || '-'}</td>
+                        <td class="py-3 px-4 text-sm text-gray-500">${bookmark.created_at || '-'}</td>
+                        <td class="py-3 px-4 text-right">
+                            <button type="button" class="approve-pending-btn bg-green-500 text-white px-3 py-1 rounded-lg mr-2 hover:bg-green-600 transition-colors duration-150" data-id="${bookmark.id}">
+                                <i class="fa fa-check mr-1"></i>批准
+                            </button>
+                            <button type="button" class="reject-pending-btn bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition-colors duration-150" data-id="${bookmark.id}">
+                                <i class="fa fa-times mr-1"></i>拒绝
+                            </button>
+                        </td>
+                    </tr>`;
+                    $("#pending-bookmark-list").append(row);
+                });
+            } else {
+                // 显示空状态，隐藏列表
+                $("#pending-empty-state").removeClass("hidden");
+            }
+        },
+        error: function(xhr) {
+            let errorMsg = "加载待审核书签失败";
+            try {
+                const response = JSON.parse(xhr.responseText);
+                errorMsg = response.message || errorMsg;
+            } catch (e) {}
+            alert(errorMsg);
+            
+            // 显示错误状态
+            $("#pending-bookmark-list").empty();
+            $("#pending-empty-state").removeClass("hidden");
+        }
+    });
+}
+
+// 批准待审核书签
+function approvePendingBookmark(id) {
+    if (confirm("确定要批准这个书签吗？批准后书签将显示在网站上。")) {
+        $.ajax({
+            url: `/api/pending-bookmarks/${id}/approve`,
+            method: "PUT",
+            success: function(response) {
+                if (response.success) {
+                    alert("书签已批准！");
+                    loadPendingBookmarks();
+                    // 重新加载书签列表以显示新添加的书签
+                    loadBookmarks();
+                } else {
+                    alert(response.message || "批准失败");
+                }
+            },
+            error: function(xhr) {
+                let errorMsg = "批准书签失败";
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    errorMsg = response.message || errorMsg;
+                } catch (e) {}
+                alert(errorMsg);
+            }
+        });
+    }
+}
+
+// 拒绝待审核书签
+function rejectPendingBookmark(id) {
+    if (confirm("确定要拒绝这个书签吗？此操作不可恢复！")) {
+        $.ajax({
+            url: `/api/pending-bookmarks/${id}/reject`,
+            method: "PUT",
+            success: function(response) {
+                if (response.success) {
+                    alert("书签已拒绝！");
+                    loadPendingBookmarks();
+                } else {
+                    alert(response.message || "拒绝失败");
+                }
+            },
+            error: function(xhr) {
+                let errorMsg = "拒绝书签失败";
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    errorMsg = response.message || errorMsg;
+                } catch (e) {}
+                alert(errorMsg);
+            }
+        });
+    }
 }

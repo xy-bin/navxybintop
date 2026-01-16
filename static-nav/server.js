@@ -51,22 +51,95 @@ const jsAddToken = '291b848e68a5949f3e57b5490015b02f';
 
 // 检查用户是否已登录的中间件
 function isAuthenticated(req, res, next) {
+    // 允许公开访问的端点和页面
+    const publicEndpoints = [
+        '/api/categories',
+        '/api/public/categories',
+        '/api/announcements',
+        '/api/search-engines',
+        '/api/test'
+    ];
+    
+    // 公开页面
+    const publicPages = [
+        '/login.html',
+        '/index.html',
+        '/api/login',
+        '/api/logout',
+        '/api/check-login'
+    ];
+    
+    // 如果请求路径在公开端点或公开页面列表中，直接通过
+    if (publicEndpoints.includes(req.path) || publicPages.includes(req.path)) {
+        return next();
+    }
+    
+    // 检查会话
     if (req.session && req.session.userId) {
         return next();
     } else {
-        // 如果是API请求，返回JSON错误
-        if (req.path.startsWith('/api/')) {
-            res.status(401).json({ success: false, message: '请先登录' });
-        } else {
-            // 如果是页面请求，重定向到登录页面
-            res.redirect('/login.html');
+        // 对于HTML页面请求，重定向到登录页面
+        if (req.path.endsWith('.html')) {
+            return res.redirect('/login.html');
         }
+        // 对于API请求，返回JSON错误信息
+        return res.status(401).json({ success: false, message: '请先登录' });
     }
 }
 
+// 全局请求日志中间件
+app.use((req, res, next) => {
+    console.log(`收到请求: ${req.method} ${req.path}`);
+    next();
+});
+
 // 中间件配置
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
+
+// 公开的分类端点（放在所有路由的最前面）
+app.get('/api/categories', (req, res) => {
+    console.log('收到GET /api/categories请求');
+    try {
+        const db = getDatabase();
+        const categories = formatResults(db.exec('SELECT * FROM categories ORDER BY sort ASC'));
+        
+        // 为每个分类获取链接数量
+        const categoriesWithCount = categories.map(category => {
+            const linkCountResult = formatResults(db.exec(`SELECT COUNT(*) as count FROM links WHERE category_id = ${category.category_id}`));
+            return {
+                ...category,
+                link_count: linkCountResult[0].count || 0
+            };
+        });
+        
+        res.json({ success: true, data: categoriesWithCount });
+    } catch (error) {
+        console.error('获取分类失败:', error);
+        res.status(500).json({ success: false, message: '获取分类失败' });
+    }
+});
+
+// 公开的分类端点（用于书签提交和前端显示）
+app.get('/api/public/categories', (req, res) => {
+    console.log('收到GET /api/public/categories请求');
+    try {
+        const db = getDatabase();
+        const categories = formatResults(db.exec('SELECT * FROM categories ORDER BY sort ASC'));
+        console.log('返回分类数据:', categories.length, '个分类');
+        res.json({ success: true, data: categories });
+    } catch (error) {
+        console.error('获取分类失败:', error);
+        res.status(500).json({ success: false, message: '获取分类失败' });
+    }
+});
+
+// 测试端点（放在所有路由之前）
+app.get('/api/test', (req, res) => {
+    console.log('收到GET /api/test请求');
+    res.json({ success: true, message: '测试端点工作正常' });
+});
 
 // 登录API
 app.post('/api/login', (req, res) => {
@@ -328,6 +401,12 @@ app.use((req, res, next) => {
     "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com"
   );
   next();
+});
+
+// 测试端点（放在所有中间件之前）
+app.get('/api/test', (req, res) => {
+    console.log('收到GET /api/test请求');
+    res.json({ success: true, message: '测试端点工作正常' });
 });
 
 // 确保所有JSON API响应使用UTF-8编码
@@ -1565,8 +1644,18 @@ app.delete('/api/bookmarks/:id', isAuthenticated, (req, res) => {
         const db = getDatabase();
         const bookmarkId = parseInt(req.params.id);
         
+        // 先获取要删除的书签的URL
+        const linkResults = db.exec(`SELECT link_url FROM links WHERE link_id = ${bookmarkId}`);
+        const links = formatResults(linkResults);
+        
         // 删除书签
         db.run(`DELETE FROM links WHERE link_id = ${bookmarkId}`);
+        
+        // 如果找到了对应的URL，也删除pending_bookmarks表中对应的已批准记录
+        if (links.length > 0) {
+            const linkUrl = links[0].link_url;
+            db.run(`DELETE FROM pending_bookmarks WHERE link_url = '${linkUrl}' AND status = 1`);
+        }
         
         // 保存数据库更改
         saveDbChanges(db);
@@ -1578,8 +1667,17 @@ app.delete('/api/bookmarks/:id', isAuthenticated, (req, res) => {
     }
 });
 
-// API端点：获取所有分类（需要登录）
-app.get('/api/categories', isAuthenticated, (req, res) => {
+// 测试端点
+app.get('/api/test', (req, res) => {
+    console.log('收到GET /api/test请求');
+    res.json({ success: true, message: '测试端点工作正常' });
+});
+
+
+
+// API端点：获取所有分类（公开访问）
+app.get('/api/categories', (req, res) => {
+    console.log('收到GET /api/categories请求');
     try {
         const db = getDatabase();
         const categories = formatResults(db.exec('SELECT * FROM categories ORDER BY sort ASC'));
@@ -1998,6 +2096,10 @@ app.get('/api/announcements', (req, res) => {
     }
 });
 
+
+
+
+
 // API端点：获取活跃的公告（公开访问）
 app.get('/api/announcements/active', (req, res) => {
     try {
@@ -2304,20 +2406,31 @@ app.delete('/api/image-sources/:id', isAuthenticated, (req, res) => {
 // 搜索引擎管理API
 // ------------------------------
 
-// API端点：获取所有搜索引擎（公开访问）
+
+
+// API端点：获取搜索引擎和分类（公开访问）
 app.get('/api/search-engines', (req, res) => {
     try {
+        const db = getDatabase();
         const engines = formatResults(db.exec('SELECT * FROM search_engines ORDER BY sort ASC'));
-        res.json({ success: true, data: engines });
+        const categories = formatResults(db.exec('SELECT * FROM categories ORDER BY sort ASC'));
+        res.json({ 
+            success: true, 
+            data: { 
+                search_engines: engines, 
+                categories: categories 
+            } 
+        });
     } catch (error) {
-        console.error('获取搜索引擎失败:', error);
-        res.status(500).json({ success: false, message: '获取搜索引擎失败' });
+        console.error('获取数据失败:', error);
+        res.status(500).json({ success: false, message: '获取数据失败' });
     }
 });
 
 // API端点：获取单个搜索引擎（需要登录）
 app.get('/api/search-engines/:id', isAuthenticated, (req, res) => {
     try {
+        const db = getDatabase();
         const engineId = parseInt(req.params.id);
         
         // 获取单个搜索引擎
@@ -2337,6 +2450,7 @@ app.get('/api/search-engines/:id', isAuthenticated, (req, res) => {
 // API端点：创建搜索引擎（需要登录）
 app.post('/api/search-engines', isAuthenticated, (req, res) => {
     try {
+        const db = getDatabase();
         const { engine_name, engine_key, engine_url, sort } = req.body;
         
         // 验证必填字段
@@ -2369,6 +2483,7 @@ app.post('/api/search-engines', isAuthenticated, (req, res) => {
 // API端点：更新搜索引擎（需要登录）
 app.put('/api/search-engines/:id', isAuthenticated, (req, res) => {
     try {
+        const db = getDatabase();
         const engineId = parseInt(req.params.id);
         const { engine_name, engine_key, engine_url, sort } = req.body;
         
@@ -2406,10 +2521,263 @@ app.put('/api/search-engines/:id', isAuthenticated, (req, res) => {
     }
 });
 
+// API端点：删除搜索引擎（需要登录）
+app.delete('/api/search-engines/:id', isAuthenticated, (req, res) => {
+    try {
+        const db = getDatabase();
+        const engineId = parseInt(req.params.id);
+        
+        // 检查搜索引擎是否存在
+        const engine = formatResults(db.exec(`SELECT * FROM search_engines WHERE search_engine_id = ${engineId}`));
+        if (engine.length === 0) {
+            return res.status(404).json({ success: false, message: '搜索引擎不存在' });
+        }
+        
+        // 删除搜索引擎
+        db.run(`DELETE FROM search_engines WHERE search_engine_id = ${engineId}`);
+        
+        // 保存数据库更改
+        saveDbChanges(db);
+        
+        res.json({ success: true, message: '搜索引擎删除成功' });
+    } catch (error) {
+        console.error('删除搜索引擎失败:', error);
+        res.status(500).json({ success: false, message: '删除搜索引擎失败' });
+    }
+});
 
+
+
+// API端点：审核书签（批准/拒绝）
+app.put('/api/pending-bookmarks/:id/approve', isAuthenticated, (req, res) => {
+    try {
+        const db = getDatabase();
+        const id = req.params.id;
+        const { category_id } = req.body || {};
+        
+        // 获取待审核书签
+        const pendingResults = db.exec(`SELECT * FROM pending_bookmarks WHERE id = ${id}`);
+        const pendingBookmarks = formatResults(pendingResults);
+        
+        if (pendingBookmarks.length === 0) {
+            return res.status(404).json({ success: false, message: '待审核书签不存在' });
+        }
+        
+        const pendingBookmark = pendingBookmarks[0];
+        
+        // 确保有有效的分类ID
+        let categoryId = parseInt(category_id) || pendingBookmark.category_id;
+        
+        if (isNaN(categoryId) || categoryId <= 0) {
+            // 检查是否有分类
+            const categories = formatResults(db.exec('SELECT * FROM categories ORDER BY sort ASC'));
+            
+            if (categories.length === 0 || !categories[0] || !categories[0].category_id) {
+                // 创建一个默认分类
+                const maxCategoryIdResult = formatResults(db.exec('SELECT MAX(category_id) as max_id FROM categories'));
+                const maxCategoryIdValue = maxCategoryIdResult.length > 0 && maxCategoryIdResult[0] && maxCategoryIdResult[0].max_id !== null ? maxCategoryIdResult[0].max_id : 0;
+                const newCategoryId = maxCategoryIdValue + 1;
+                
+                const categoryName = '默认分类';
+                const categoryIcon = 'fa fa-folder';
+                const categorySort = 1;
+                
+                db.run(
+                    'INSERT INTO categories (category_id, category_name, category_icon, sort) VALUES (?, ?, ?, ?)',
+                    [newCategoryId, categoryName, categoryIcon, categorySort]
+                );
+                
+                saveDbChanges(db);
+                categoryId = newCategoryId;
+            } else {
+                categoryId = categories[0].category_id;
+            }
+        }
+        
+        // 检查URL是否已存在
+        const existingLinks = formatResults(db.exec(`SELECT * FROM links WHERE link_url = '${pendingBookmark.link_url}'`));
+        
+        if (existingLinks.length > 0) {
+            return res.status(400).json({ success: false, message: '该网址已经存在' });
+        }
+        
+        // 生成新书签ID
+        const links = formatResults(db.exec('SELECT MAX(link_id) as max_id FROM links'));
+        const maxId = links.length > 0 && links[0] && links[0].max_id !== null ? links[0].max_id : 0;
+        const linkId = maxId + 1;
+        
+        // 获取当前时间
+        const currentTime = new Date().toISOString();
+        
+        // 插入到正式书签表
+        db.run(
+            'INSERT INTO links (link_id, category_id, link_name, link_url, link_icon, link_desc, sort) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [
+                linkId,
+                categoryId,
+                pendingBookmark.link_name,
+                pendingBookmark.link_url,
+                pendingBookmark.link_icon || 'fa fa-link',
+                pendingBookmark.link_desc || '',
+                0
+            ]
+        );
+        
+        // 更新待审核书签状态为已批准
+        db.run(
+            'UPDATE pending_bookmarks SET status = 1, updated_at = ? WHERE id = ?',
+            [currentTime, id]
+        );
+        
+        // 保存数据库更改
+        saveDbChanges(db);
+        
+        res.json({ success: true, message: '书签已批准并添加到网站' });
+    } catch (error) {
+        console.error('批准书签失败:', error);
+        res.status(500).json({ success: false, message: '批准书签失败' });
+    }
+});
+
+app.put('/api/pending-bookmarks/:id/reject', isAuthenticated, (req, res) => {
+    try {
+        const db = getDatabase();
+        const id = req.params.id;
+        
+        // 检查待审核书签是否存在
+        const pendingResults = db.exec(`SELECT * FROM pending_bookmarks WHERE id = ${id}`);
+        const pendingBookmarks = formatResults(pendingResults);
+        
+        if (pendingBookmarks.length === 0) {
+            return res.status(404).json({ success: false, message: '待审核书签不存在' });
+        }
+        
+        // 更新待审核书签状态为已拒绝
+        const currentTime = new Date().toISOString();
+        db.run(
+            'UPDATE pending_bookmarks SET status = 2, updated_at = ? WHERE id = ?',
+            [currentTime, id]
+        );
+        
+        // 保存数据库更改
+        saveDbChanges(db);
+        
+        res.json({ success: true, message: '书签已拒绝' });
+    } catch (error) {
+        console.error('拒绝书签失败:', error);
+        res.status(500).json({ success: false, message: '拒绝书签失败' });
+    }
+});
+
+// API端点：获取待审核书签列表（需要管理员权限）
+app.get('/api/pending-bookmarks', isAuthenticated, (req, res) => {
+    try {
+        const db = getDatabase();
+        const results = db.exec(`
+            SELECT pb.*, c.category_name 
+            FROM pending_bookmarks pb
+            LEFT JOIN categories c ON pb.category_id = c.category_id
+            WHERE pb.status = 0
+            ORDER BY pb.created_at DESC
+        `);
+        const pendingBookmarks = formatResults(results);
+        res.json({ success: true, data: pendingBookmarks });
+    } catch (error) {
+        console.error('获取待审核书签列表失败:', error);
+        res.status(500).json({ success: false, message: '获取待审核书签列表失败' });
+    }
+});
+
+// API端点：提交书签（用于前台页面，不需要登录）
+app.post('/api/pending-bookmarks', (req, res) => {
+    console.log('收到POST /api/pending-bookmarks请求');
+    try {
+        const db = getDatabase();
+        const pendingBookmark = req.body;
+        console.log('书签数据:', pendingBookmark);
+        
+        // 验证必填字段
+        if (!pendingBookmark.link_name || !pendingBookmark.link_url || !pendingBookmark.submitter_name) {
+            return res.status(400).json({ success: false, message: '请填写完整的书签信息' });
+        }
+        
+        // 检查URL是否已存在
+        const existingLinks = formatResults(db.exec(`SELECT * FROM links WHERE link_url = '${pendingBookmark.link_url}'`));
+        if (existingLinks.length > 0) {
+            return res.status(400).json({ success: false, message: '该网址已经存在' });
+        }
+        
+        // 先检查是否有状态为0的待审核记录
+        const existingPending = formatResults(db.exec(`SELECT * FROM pending_bookmarks WHERE link_url = '${pendingBookmark.link_url}' AND status = 0`));
+        if (existingPending.length > 0) {
+            return res.status(400).json({ success: false, message: '该网址已经在待审核列表中' });
+        }
+        
+        // 获取当前时间
+        const currentTime = new Date().toISOString();
+        
+        // 使用INSERT OR REPLACE语句，确保在有冲突时自动更新记录
+        db.run(
+            `INSERT OR REPLACE INTO pending_bookmarks 
+             (link_name, link_url, link_icon, link_desc, category_id, submitter_name, submitter_contact, status, created_at, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, 0, 
+                     CASE WHEN EXISTS (SELECT 1 FROM pending_bookmarks WHERE link_url = ?) 
+                          THEN (SELECT created_at FROM pending_bookmarks WHERE link_url = ?) 
+                          ELSE ? 
+                     END, 
+                     ?)`,
+            [
+                pendingBookmark.link_name,
+                pendingBookmark.link_url,
+                pendingBookmark.link_icon || 'fa fa-link',
+                pendingBookmark.link_desc || '',
+                pendingBookmark.category_id || null,
+                pendingBookmark.submitter_name,
+                pendingBookmark.submitter_contact || '',
+                pendingBookmark.link_url,
+                pendingBookmark.link_url,
+                currentTime,
+                currentTime
+            ]
+        );
+        
+        // 保存数据库更改
+        saveDbChanges(db);
+        
+        res.json({ success: true, message: '书签提交成功，等待管理员审核' });
+    } catch (error) {
+        console.error('提交书签失败:', error);
+        res.status(500).json({ success: false, message: '提交书签失败' });
+    }
+});
+
+// 保护管理后台页面 - 必须放在静态文件服务之前
+app.get('/admin.html', isAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, 'admin.html'));
+});
 
 // 静态文件服务 - 放在所有API端点之后
 app.use(express.static(__dirname));
+
+// 公开分类端点（用于书签提交和前端显示）
+app.get('/api/public/categories', (req, res) => {
+    console.log('收到GET /api/public/categories请求');
+    try {
+        const db = getDatabase();
+        const categories = formatResults(db.exec('SELECT * FROM categories ORDER BY sort ASC'));
+        console.log('返回分类数据:', categories.length, '个分类');
+        res.json({ success: true, data: categories });
+    } catch (error) {
+        console.error('获取分类失败:', error);
+        res.status(500).json({ success: false, message: '获取分类失败' });
+    }
+});
+
+// 测试端点
+app.get('/api/test', (req, res) => {
+    console.log('收到GET /api/test请求');
+    res.json({ success: true, message: '测试端点工作正常' });
+});
 
 // 启动服务器
 // 初始化数据库后启动服务器

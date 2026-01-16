@@ -613,7 +613,7 @@ $(document).ready(function() {
                     { engine_name: '360搜索', engine_key: 'so', engine_url: 'https://www.so.com/s?q=', sort: 4 }
                 ];
                 
-                const enginesToUse = data.success && data.data.length > 0 ? data.data : defaultEngines;
+                const enginesToUse = data.success && data.data && data.data.search_engines && data.data.search_engines.length > 0 ? data.data.search_engines : defaultEngines;
                 
                 // 填充搜索引擎选择器并更新映射
                 enginesToUse.forEach(engine => {
