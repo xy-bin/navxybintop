@@ -3,28 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title id="site-title">我的聚合导航站 - 实用网站导航集合</title>
+    <title id="site-title">拾光书签 - 实用网站导航集合</title>
     <!-- Meta标签优化 -->
-    <meta name="keywords" id="site-keywords" content="聚合导航,网站导航,实用工具,常用网站,网址导航,导航站">
-    <meta name="description" id="site-description" content="我的聚合导航站，为您提供精选常用网站导航，包括搜索引擎、社交媒体、开发工具、学习资源等各类实用网站集合。">
+    <meta name="keywords" id="site-keywords" content="拾光书签,聚合导航,网站导航,实用工具,常用网站,网址导航,导航站">
+    <meta name="description" id="site-description" content="拾光书签，为您提供精选常用网站导航，包括搜索引擎、社交媒体、开发工具、学习资源等各类实用网站集合。">
     <meta name="author" content="xy-bin">
-    <meta name="copyright" content="© 2026 我的聚合导航站">
+    <meta name="copyright" content="© 2026 拾光书签">
     <meta name="robots" content="index, follow">
     <meta name="googlebot" content="index, follow">
     <meta name="generator" content="HTML5, Tailwind CSS, JavaScript">
     <meta name="theme-color" content="#3B82F6">
     <meta name="msapplication-TileColor" content="#3B82F6">
     <!-- 开放图谱(Open Graph)标签 -->
-    <meta property="og:title" content="我的聚合导航站 - 实用网站导航集合">
-    <meta property="og:description" content="我的聚合导航站，为您提供精选常用网站导航，包括搜索引擎、社交媒体、开发工具、学习资源等各类实用网站集合。">
+    <meta property="og:title" content="拾光书签 - 实用网站导航集合">
+    <meta property="og:description" content="拾光书签，为您提供精选常用网站导航，包括搜索引擎、社交媒体、开发工具、学习资源等各类实用网站集合。">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://nav.xybin.top/">
     <meta property="og:image" content="https://nav.xybin.top/res/favicon.ico">
-    <meta property="og:site_name" content="我的聚合导航站">
+    <meta property="og:site_name" content="拾光书签">
     <!-- Twitter Cards标签 -->
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="我的聚合导航站 - 实用网站导航集合">
-    <meta name="twitter:description" content="我的聚合导航站，为您提供精选常用网站导航，包括搜索引擎、社交媒体、开发工具、学习资源等各类实用网站集合。">
+    <meta name="twitter:title" content="拾光书签 - 实用网站导航集合">
+    <meta name="twitter:description" content="拾光书签，为您提供精选常用网站导航，包括搜索引擎、社交媒体、开发工具、学习资源等各类实用网站集合。">
     <meta name="twitter:image" content="https://nav.xybin.top/res/favicon.ico">
     <meta name="twitter:creator" content="@xy-bin">
     <!-- 规范URL标签 -->
@@ -46,8 +46,8 @@
     {
         "@context": "https://schema.org",
         "@type": "WebSite",
-        "name": "我的聚合导航站",
-        "description": "我的聚合导航站，为您提供精选常用网站导航，包括搜索引擎、社交媒体、开发工具、学习资源等各类实用网站集合。",
+        "name": "拾光书签",
+        "description": "拾光书签，为您提供精选常用网站导航，包括搜索引擎、社交媒体、开发工具、学习资源等各类实用网站集合。",
         "url": "https://nav.xybin.top/",
         "potentialAction": {
             "@type": "SearchAction",
@@ -133,7 +133,7 @@
     <!-- 底部区域（版权信息） -->
     <footer class="bg-white dark:bg-gray-800 shadow-sm py-4 px-2 md:px-4 mt-auto">
         <div class="container mx-auto max-w-7xl text-center text-gray-500 dark:text-gray-400 text-sm">
-            <p id="site-footer">Copyright © 2024 我的聚合导航站 | Theme By Tailwind CSS</p>
+            <p id="site-footer">Copyright © 2026 拾光书签 | Theme By Tailwind CSS</p>
             <p id="site-icp" class="mt-1" style="display: none;"></p>
             <div id="site-footer-custom"></div>
         </div>
@@ -146,10 +146,72 @@
             <i class="fa fa-moon-o text-primary"></i>
         </button>
         
+        <!-- 提交收录按钮 -->
+        <button id="submit-bookmark-btn" class="p-3 bg-green-500 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none">
+            <i class="fa fa-plus"></i>
+        </button>
+        
         <!-- 一键返回顶部按钮 -->
         <button id="back-to-top-btn" class="p-3 bg-primary text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 opacity-0 invisible focus:outline-none">
             <i class="fa fa-arrow-up"></i>
         </button>
+    </div>
+    
+    <!-- 提交书签模态框 -->
+    <div id="submit-bookmark-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">提交网站收录</h3>
+                <button id="close-submit-modal-btn" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form id="submit-bookmark-form">
+                <div class="space-y-4">
+                    <div>
+                        <label for="submit-bookmark-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">网站名称</label>
+                        <input type="text" id="submit-bookmark-name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white dark:bg-gray-700 text-gray-800 dark:text-white" required>
+                    </div>
+                    
+                    <div>
+                        <label for="submit-bookmark-url" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">网站URL</label>
+                        <input type="url" id="submit-bookmark-url" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white dark:bg-gray-700 text-gray-800 dark:text-white" required placeholder="https://">
+                    </div>
+                    
+                    <div>
+                        <label for="submit-bookmark-desc" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">网站描述</label>
+                        <input type="text" id="submit-bookmark-desc" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder="请简要描述网站功能">
+                    </div>
+                    
+                    <div>
+                        <label for="submit-bookmark-category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">分类</label>
+                        <select id="submit-bookmark-category" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white dark:bg-gray-700 text-gray-800 dark:text-white" required>
+                            <option value="">请选择分类</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="submit-bookmark-submitter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">您的昵称（可选）</label>
+                        <input type="text" id="submit-bookmark-submitter" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder="匿名">
+                    </div>
+                    
+                    <div>
+                        <label for="submit-bookmark-contact" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">联系方式（可选）</label>
+                        <input type="text" id="submit-bookmark-contact" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder="邮箱/QQ/微信">
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" id="cancel-submit-btn" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                        取消
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors">
+                        提交
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- 引入主题管理脚本 -->
@@ -171,6 +233,8 @@
     </div>
     <!-- 引入核心JS脚本（最后引入，确保DOM加载完成） -->
     <script src="js/main.js"></script>
+    <!-- 提交收录功能 -->
+    <script src="js/submit-bookmark.js"></script>
     <!-- 主题预览功能 -->
     <script src="js/theme-preview.js"></script>
 </body>

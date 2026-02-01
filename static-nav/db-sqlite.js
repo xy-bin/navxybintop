@@ -193,6 +193,23 @@ function createTables(db) {
             updated_at TEXT
         )
     `);
+    
+    // 创建待审核书签表
+    db.run(`
+        CREATE TABLE IF NOT EXISTS pending_bookmarks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            link_name TEXT,
+            link_url TEXT,
+            link_icon TEXT,
+            link_desc TEXT,
+            category_id INTEGER,
+            submitter_name TEXT,
+            submitter_contact TEXT,
+            status INTEGER DEFAULT 0,
+            created_at TEXT,
+            updated_at TEXT
+        )
+    `);
 }
 
 // 迁移数据
