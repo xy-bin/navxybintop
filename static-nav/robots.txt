@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin.html
 Disallow: /login.html
 
-Sitemap: https://nav.xybin.top/sitemap.xml
+Sitemap: https://www.xybin.top/sitemap.xml
